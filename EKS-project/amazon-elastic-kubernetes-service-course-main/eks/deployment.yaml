@@ -1,0 +1,89 @@
+####################################################################
+# Deployment
+# Runs 2 replicas of a simple nginx container across nodes.
+# Anti-affinity rule ensures replicas land on different nodes
+# (important for demonstrating ALB target group health checks).
+####################################################################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  namespace: demo
+  labels:
+    app: demo-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: demo-app
+  template:
+    metadata:
+      labels:
+        app: demo-app
+    spec:
+      # Spread replicas across different nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - demo-app
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: demo-app
+          image: nginx:stable-alpine
+          ports:
+            - containerPort: 80
+          # Serve a custom page so you can confirm ALB is routing correctly
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "<h1>demo-app on $(hostname)</h1>" > /usr/share/nginx/html/index.html
+              nginx -g 'daemon off;'
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
+---
+####################################################################
+# Service
+# ClusterIP — the ALB controller reads this to register pod IPs
+# directly as targets (IP mode), bypassing kube-proxy.
+####################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app
+  namespace: demo
+  labels:
+    app: demo-app
+spec:
+  type: ClusterIP
+  selector:
+    app: demo-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP

@@ -1,0 +1,36 @@
+# Helm values for the AWS Load Balancer Controller
+#
+# Install with:
+#   helm repo add eks https://aws.github.io/eks-charts
+#   helm repo update
+#   helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+#     -n kube-system \
+#     -f alb-controller-values.yaml
+#
+# Replace <AlbControllerIrsaRoleArn> with the Terraform output value.
+
+clusterName: demo-eks
+
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    # This annotation is what binds the ServiceAccount to the IRSA role.
+    # Replace with the value of the AlbControllerIrsaRoleArn Terraform output.
+    eks.amazonaws.com/role-arn: <AlbControllerIrsaRoleArn>
+
+# Run 2 replicas for resilience across nodes
+replicaCount: 2
+
+# Resource requests — t3.medium nodes are modest, keep this lean
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+# Pod disruption budget — ensures at least 1 replica is always up during node drain
+podDisruptionBudget:
+  maxUnavailable: 1
