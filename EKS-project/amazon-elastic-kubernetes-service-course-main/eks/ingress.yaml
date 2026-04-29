@@ -14,7 +14,7 @@ metadata:
   namespace: demo
   annotations:
     # Tell the ALB controller to handle this Ingress
-    kubernetes.io/ingress.class: alb
+    #kubernetes.io/ingress.class: alb
 
     # internet-facing = public ALB. Use "internal" for VPC-only access.
     alb.ingress.kubernetes.io/scheme: internet-facing
@@ -23,6 +23,7 @@ metadata:
     # instance mode (which goes through NodePort + kube-proxy).
     # Requires VPC CNI so pods have routable IPs, which EKS provides.
     alb.ingress.kubernetes.io/target-type: ip
+    ingressclass.kubernetes.io/is-default-class: "true"
 
     # Health check tuning — faster than ALB defaults for a demo
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
@@ -34,6 +35,7 @@ metadata:
     alb.ingress.kubernetes.io/tags: Environment=demo,ManagedBy=eks-alb-controller
 
 spec:
+  ingressClassName: alb
   rules:
     - http:
         paths:

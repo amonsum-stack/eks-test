@@ -8,10 +8,8 @@
 #   3. Attaches the existing loadbalancer_policy to the IRSA role
 #
 # The existing loadbalancer_policy (eksPolicy) attached to the node
-# role is reused here — no duplicate policy needed.
 #
-# After applying, install the controller with Helm:
-#   See ../docs/alb-controller.md
+# After applying, install the controller with Helm
 #
 ####################################################################
 

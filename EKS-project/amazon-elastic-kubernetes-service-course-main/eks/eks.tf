@@ -38,5 +38,15 @@ resource "aws_eks_cluster" "demo_eks" {
     authentication_mode                         = "CONFIG_MAP"
     bootstrap_cluster_creator_admin_permissions = true
   }
+    
+    # Lifecyle block to ignore changes to access_config, which is required to allow us to modify the aws-auth configmap 
+    # after cluster creation without Terraform trying to reset it back to the default
+    # This is required because the aws-auth configmap is what allows us to grant permissions to our worker nodes to join the cluster, 
+    # and if Terraform tries to reset it back to the default then our worker nodes will not be able to join the cluster
+    # This is a common issue when using Terraform to manage EKS clusters, and this is the recommended way to work around it
+    # especially when doing things in predefined labs 
+    lifecycle {
+    ignore_changes = [access_config]
+  }
 }
 
