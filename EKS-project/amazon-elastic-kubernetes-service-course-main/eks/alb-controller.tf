@@ -74,7 +74,7 @@ resource "aws_iam_role" "alb_controller_irsa" {
   }
 }
 
-# Reuse the existing loadbalancer_policy (eksPolicy) — no new policy needed.
+# Reuse the existing loadbalancer_policy (eksPolicy).
 # This is the same policy already attached to the node role in nodes.tf.
 resource "aws_iam_role_policy_attachment" "alb_controller_irsa_policy" {
   policy_arn = aws_iam_policy.loadbalancer_policy.arn

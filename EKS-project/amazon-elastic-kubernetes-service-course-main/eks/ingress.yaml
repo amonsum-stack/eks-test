@@ -13,8 +13,9 @@ metadata:
   name: demo-app
   namespace: demo
   annotations:
-    # Tell the ALB controller to handle this Ingress
-    #kubernetes.io/ingress.class: alb
+    # Tell the ALB controller to handle this Ingress  
+    # depriciated command i think since we have ingressClassName in spec
+    # kubernetes.io/ingress.class: alb  
 
     # internet-facing = public ALB. Use "internal" for VPC-only access.
     alb.ingress.kubernetes.io/scheme: internet-facing

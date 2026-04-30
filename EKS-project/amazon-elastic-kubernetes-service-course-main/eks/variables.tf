@@ -64,3 +64,18 @@ variable "ec2_instance_type" {
   description = "ec2 instance type"
   default = "t3.medium"
 }
+
+# Name of the DB and username for the RDS Postgres instance. 
+# These are used in the application and must match the values in the application configuration.
+
+variable "db_name" {
+  type        = string
+  description = "Name of the initial Postgres database"
+  default     = "appdb"
+}
+
+variable "db_username" {
+  type        = string
+  description = "Master username for RDS Postgres"
+  default     = "appuser"
+}

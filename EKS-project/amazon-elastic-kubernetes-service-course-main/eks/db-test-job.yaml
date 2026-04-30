@@ -1,0 +1,79 @@
+####################################################################
+# DB Connection Test Job
+#
+# Runs a single psql command against RDS to prove pods can reach
+# the database. Uses the postgres-credentials Secret created by
+# create-db-secret.sh.
+#
+# Deploy:
+#   kubectl apply -f k8s/db-test/db-test-job.yaml
+#
+# Check result:
+#   kubectl logs -n demo job/db-connection-test
+#
+# Clean up:
+#   kubectl delete -f k8s/db-test/db-test-job.yaml
+####################################################################
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-connection-test
+  namespace: demo
+spec:
+  ttlSecondsAfterFinished: 300   # Auto-clean after 5 minutes
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: postgres:16-alpine
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Testing connection to RDS Postgres..."
+              export PGPASSWORD=$DB_PASSWORD
+
+              # Attempt connection and run a simple query
+              psql \
+                --host=$DB_HOST \
+                --port=$DB_PORT \
+                --username=$DB_USERNAME \
+                --dbname=$DB_NAME \
+                --command="SELECT version();" \
+                --command="SELECT current_database(), current_user, now();"
+
+              echo "Connection successful!"
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: port
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: dbname
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
