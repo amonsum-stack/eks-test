@@ -14,14 +14,6 @@
 #
 ####################################################################
 
-####################################################################
-# EKS Node Alarms
-#
-# CloudWatch gets EC2 metrics from the ASG instances automatically.
-# We use the ASG name to create a metric filter across all nodes.
-# Note: individual node alarms would require one alarm per instance
-# which is dynamic — using ASG-level metrics is more practical.
-####################################################################
 
 # High CPU across any node in the ASG
 resource "aws_cloudwatch_metric_alarm" "eks_node_cpu_high" {

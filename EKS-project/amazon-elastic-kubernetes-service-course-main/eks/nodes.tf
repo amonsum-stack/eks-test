@@ -268,6 +268,7 @@ Outputs:
 
     lifecycle {
     ignore_changes = [template_body]  # in case we change subnet IDs or other properties that would cause 
-                                      # CloudFormation to want to replace the stack,
+                                      # CloudFormation to want to replace the stack. 
+                                      # Otherwise, during redeployments it can loop cloud formation.
   }
 }

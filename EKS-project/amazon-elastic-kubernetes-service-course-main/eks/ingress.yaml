@@ -1,11 +1,7 @@
 ####################################################################
 # Ingress — AWS Application Load Balancer
-#
-# The aws-load-balancer-controller watches for Ingress resources
-# with the annotation kubernetes.io/ingress.class: alb and
 # provisions a real ALB in AWS automatically.
 #
-# Key annotation decisions explained inline below.
 ####################################################################
 apiVersion: networking.k8s.io/v1
 kind: Ingress

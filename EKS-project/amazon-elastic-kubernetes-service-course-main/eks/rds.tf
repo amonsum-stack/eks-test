@@ -28,12 +28,10 @@ resource "aws_subnet" "private" {
   # No map_public_ip_on_launch — these are private
   tags = {
     Name = "eks-private-${["a", "b", "c"][count.index]}"
-    # Tag so it's clear these are not for EKS nodes
     "kubernetes.io/role/internal-elb" = "1"
   }
 }
 
-# Private route table — no IGW route, traffic stays in VPC
 resource "aws_route_table" "private" {
   vpc_id = data.aws_vpc.default_vpc.id
 
@@ -99,7 +97,6 @@ resource "aws_vpc_security_group_egress_rule" "rds_egress" {
 resource "random_password" "db_password" {
   length           = 32
   special          = true
-  # RDS does not allow @ / " in passwords
   override_special = "!#$%^&*()-_=+[]{}|;:,.<>?"
 }
 
@@ -140,7 +137,7 @@ resource "aws_db_instance" "postgres" {
   instance_class = "db.t3.micro"
 
   allocated_storage     = 20
-  max_allocated_storage = 100 # Enable storage autoscaling up to 100GB
+  max_allocated_storage = 100 
   storage_type          = "gp2"
   storage_encrypted     = true
 

@@ -38,7 +38,6 @@ locals {
 
 # Trust policy that allows ONLY the aws-load-balancer-controller ServiceAccount
 # in the kube-system namespace to assume this role.
-# This is the key security constraint of IRSA — scoped to one specific SA.
 data "aws_iam_policy_document" "alb_controller_assume_role" {
   statement {
     effect  = "Allow"
