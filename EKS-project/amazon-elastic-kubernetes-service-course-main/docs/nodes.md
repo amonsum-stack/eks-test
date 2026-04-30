@@ -8,12 +8,6 @@
 
 1.  Join the worker nodes
 
-    1. Download the node authentication ConfigMap
-
-        ```
-        curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2020-10-29/aws-auth-cm.yaml
-        ```
-
     1.  Edit the ConfigMap YAML to add in the `NodeInstanceRole` obtained from terraform
 
         ```bash
@@ -58,12 +52,4 @@
 
     You should see 3 worker nodes in ready state. Note that with EKS you do not see control plane nodes, as they are managed by AWS.
 
-    You can also view the completed cluster in the [EKS Console](https://us-east-1.console.aws.amazon.com/eks/home?region=us-east-1).
-
-## Personal AWS Account
-
-If you deployed the cluster into your own AWS account, you should delete resources when finished to avoid unwanted charges and also any risk of account compromise! This is *not* a security focused production grade deployment! Run the following:
-
-```
-terraform destroy
-```
+    You can also view the completed cluster in the [EKS Console] from AWS Web UI

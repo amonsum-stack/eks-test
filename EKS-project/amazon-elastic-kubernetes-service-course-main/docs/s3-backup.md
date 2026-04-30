@@ -90,7 +90,7 @@ Verify in AWS console or via CLI:
 ```bash
 aws s3 ls s3://$(terraform output -raw backup_bucket_name)/backups/ --recursive
 ```
-
+Or check the Web UI you should see bucket > backup > date > files
 ---
 
 ## Lifecycle policy explained

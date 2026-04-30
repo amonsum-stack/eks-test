@@ -41,6 +41,8 @@ export TF_VAR_alert_email="you@example.com"
 
 ---
 
+You can use some temporary email for testing purposes
+
 ## Step 2 — Apply
 
 ```bash
@@ -78,7 +80,7 @@ aws cloudwatch describe-alarms \
   --query 'MetricAlarms[].{Name:AlarmName,State:StateValue}'
 ```
 
-You should see all alarms in `OK` or `INSUFFICIENT_DATA` state initially.
+You should see all alarms in `OK` or `INSUFFICIENT_DATA` state initially. Or check the Web UI under Cloudwatch > Alarms.
 
 ---
 
@@ -99,7 +101,7 @@ from `eks-backup-events` with subject:
 The email body will contain the S3 event JSON showing the object key,
 size, and timestamp of the backup file.
 
-Trigger cpu alarms on EKS nodes
+Trigger cpu alarms on EKS nodes with the following
 
 kubectl run cpu-stress \
   --image=containerstack/cpustress \

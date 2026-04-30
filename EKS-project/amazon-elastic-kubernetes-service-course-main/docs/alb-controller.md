@@ -9,8 +9,6 @@ cluster using IRSA (IAM Roles for Service Accounts), then verifying it with a de
 
 - Cluster is running and `kubectl get node` shows nodes in `Ready` state
 - `helm` v3 installed
-- `terraform apply` has been run with the new `alb-controller.tf`
-
 ---
 
 ## Step 1 — Apply the Terraform changes
@@ -97,6 +95,7 @@ demo-app   <none>   *       k8s-demo-xxx.us-east-1.elb.amazonaws.com         80 
 ALB_URL=$(kubectl get ingress demo-app -n demo -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 curl http://$ALB_URL
 ```
+Or just curl the alb url from the aws load balancer web page
 
 You should see something like:
 

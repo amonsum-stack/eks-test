@@ -18,6 +18,15 @@ provider "aws" {
   #   }
 }
 
+terraform {
+  required_providers {
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+}
+
 output "NodeInstanceRole" {
   value = aws_iam_role.node_instance_role.arn
 }

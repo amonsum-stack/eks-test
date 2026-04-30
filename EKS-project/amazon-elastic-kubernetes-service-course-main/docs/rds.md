@@ -75,7 +75,7 @@ kubectl get secret postgres-credentials -n demo
 ## Step 4 — Test the connection from a pod
 
 ```bash
-kubectl apply -f k8s/db-test/db-test-job.yaml
+kubectl apply -f db-test-job.yaml
 
 # Wait for the job to complete
 kubectl get job db-connection-test -n demo -w
