@@ -32,6 +32,11 @@ data "aws_subnets" "public" {
       "${var.aws_region}c",
     ]
   }
+
+    filter {
+    name   = "mapPublicIpOnLaunch"    # so the cluster can bind to public subnets
+    values = ["true"]
+  }
 }
 
 # Get AMI ID for latest recommended Amazon Linux 2 image

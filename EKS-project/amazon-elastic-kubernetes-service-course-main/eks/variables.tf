@@ -79,3 +79,12 @@ variable "db_username" {
   description = "Master username for RDS Postgres"
   default     = "appuser"
 }
+
+# Email address for all CloudWatch alarm and backup notifications.
+variable "alert_email" {
+  type        = string
+  description = "Email address for all CloudWatch alarm and backup notifications"
+  # Set via terraform.tfvars or environment variable:
+  #   export TF_VAR_alert_email="you@example.com"
+  # Do not set a default here — forces explicit acknowledgement
+}

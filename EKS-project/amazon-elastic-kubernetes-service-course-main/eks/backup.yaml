@@ -1,0 +1,223 @@
+####################################################################
+# Backup ServiceAccount
+#
+# Annotated with the IRSA role ARN — this is what gives the
+# CronJob pods permission to write to S3 without any static
+# AWS credentials anywhere in the cluster.
+#
+# Replace <backup_irsa_role_arn> with the Terraform output value:
+#   terraform output -raw backup_irsa_role_arn
+####################################################################
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-job
+  namespace: demo
+  annotations:
+    eks.amazonaws.com/role-arn: <backup_irsa_role_arn>
+---
+####################################################################
+# Weekly pg_dump CronJob
+#
+# Schedule: Sunday 02:00 UTC weekly (cron: "0 2 * * 0")
+#
+# What it does:
+#   1. pg_dump the appdb database
+#   2. gzip compress the output
+#   3. Upload to s3://<bucket>/backups/YYYY-MM-DD/appdb.sql.gz
+#
+# The backup filename includes the date so each week's backup
+# is a separate object — versioning protects against overwrites.
+#
+# Replace <backup_bucket_name> with the Terraform output value:
+#   terraform output -raw backup_bucket_name
+####################################################################
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: demo
+spec:
+  schedule: "0 2 * * 0"          # Every Sunday at 02:00 UTC
+  concurrencyPolicy: Forbid       # Don't run if previous job still running
+  successfulJobsHistoryLimit: 3   # Keep last 3 successful job records
+  failedJobsHistoryLimit: 3       # Keep last 3 failed job records
+  jobTemplate:
+    spec:
+      backoffLimit: 2             # Retry up to 2 times on failure
+      template:
+        spec:
+          serviceAccountName: backup-job   # IRSA-annotated SA
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-backup
+              # Use an image that has both psql and aws cli
+              image: postgres:16-alpine
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -euo pipefail
+
+                  # Install AWS CLI (alpine-compatible)
+                  apk add --no-cache aws-cli > /dev/null 2>&1
+
+                  DATE=$(date +%Y-%m-%d)
+                  BACKUP_KEY="backups/${DATE}/appdb.sql.gz"
+
+                  echo "Starting backup for ${DATE}..."
+                  echo "Target: s3://${BUCKET_NAME}/${BACKUP_KEY}"
+
+                  # Dump and stream directly to S3 — no local disk needed
+                  PGPASSWORD="${DB_PASSWORD}" pg_dump \
+                    --host="${DB_HOST}" \
+                    --port="${DB_PORT}" \
+                    --username="${DB_USERNAME}" \
+                    --dbname="${DB_NAME}" \
+                    --no-password \
+                    --format=plain \
+                    --verbose \
+                  | gzip \
+                  | aws s3 cp - "s3://${BUCKET_NAME}/${BACKUP_KEY}" \
+                      --storage-class STANDARD \
+                      --expected-bucket-owner "${AWS_ACCOUNT_ID}"
+
+                  echo "Backup complete: s3://${BUCKET_NAME}/${BACKUP_KEY}"
+
+                  # Verify the upload exists
+                  aws s3 ls "s3://${BUCKET_NAME}/${BACKUP_KEY}"
+                  echo "Verified backup is present in S3."
+
+              env:
+                # Database credentials from existing Secret
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: host
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: port
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: dbname
+                - name: DB_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: username
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: password
+                # S3 target — set from Terraform output
+                - name: BUCKET_NAME
+                  value: "<backup_bucket_name>"
+                - name: AWS_ACCOUNT_ID
+                  value: "<aws_account_id>"
+                # AWS region for the CLI
+                - name: AWS_DEFAULT_REGION
+                  value: "us-east-1" #this should be changer to your region if not us-east-1, maybe use a variable for this in terraform?
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+---
+####################################################################
+# One-off test Job
+#
+# Triggers the same backup logic immediately so you can verify
+# the full pipeline without waiting for Sunday.
+#
+# Deploy:   kubectl apply -f k8s/backup/backup-test-job.yaml
+# Logs:     kubectl logs -n demo job/backup-test
+# Cleanup:  kubectl delete job backup-test -n demo
+####################################################################
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backup-test
+  namespace: demo
+spec:
+  ttlSecondsAfterFinished: 120 # Deletes the job after 2 minutes
+  template:
+    spec:
+      serviceAccountName: backup-job
+      restartPolicy: Never
+      containers:
+        - name: pg-backup
+          image: postgres:16-alpine
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+
+              apk add --no-cache aws-cli > /dev/null 2>&1
+
+              DATE=$(date +%Y-%m-%d)
+              BACKUP_KEY="backups/${DATE}/appdb-test.sql.gz"
+
+              echo "Starting test backup for ${DATE}..."
+              echo "Target: s3://${BUCKET_NAME}/${BACKUP_KEY}"
+
+              PGPASSWORD="${DB_PASSWORD}" pg_dump \
+                --host="${DB_HOST}" \
+                --port="${DB_PORT}" \
+                --username="${DB_USERNAME}" \
+                --dbname="${DB_NAME}" \
+                --no-password \
+                --format=plain \
+              | gzip \
+              | aws s3 cp - "s3://${BUCKET_NAME}/${BACKUP_KEY}" \
+                  --storage-class STANDARD
+
+              echo "Upload complete. Verifying..."
+              aws s3 ls "s3://${BUCKET_NAME}/${BACKUP_KEY}"
+              echo "Test backup successful!"
+
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: port
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: dbname
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+            - name: BUCKET_NAME
+              value: "<backup_bucket_name>"
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi

@@ -265,4 +265,9 @@ Outputs:
     Description: The autoscaling group
     Value: !Ref NodeGroup
   EOF
+
+    lifecycle {
+    ignore_changes = [template_body]  # in case we change subnet IDs or other properties that would cause 
+                                      # CloudFormation to want to replace the stack,
+  }
 }

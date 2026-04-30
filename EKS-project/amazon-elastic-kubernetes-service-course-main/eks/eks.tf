@@ -46,7 +46,7 @@ resource "aws_eks_cluster" "demo_eks" {
     # This is a common issue when using Terraform to manage EKS clusters, and this is the recommended way to work around it
     # especially when doing things in predefined labs 
     lifecycle {
-    ignore_changes = [access_config]
+    ignore_changes = [access_config, vpc_config]
   }
 }
 
