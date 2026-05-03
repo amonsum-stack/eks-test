@@ -1,0 +1,82 @@
+####################################################################
+# HorizontalPodAutoscaler — Belgrade Weather App
+#
+# Scaling policy:
+#   Min replicas : 3  (one per node, always available)
+#   Max replicas : 9  (3x the node count — scheduler will stack
+#                      up to 3 pods per node under heavy load)
+#
+# Scale-up triggers (either condition causes a scale-up):
+#   - Average CPU    > 70%  across all pods
+#   - Average Memory > 75%  across all pods
+#
+# Scale-up/down behaviour:
+#   - Scale up   : adds up to 3 pods per 60s (fast response to spikes)
+#   - Scale down : removes 1 pod per 120s   (conservative, avoids flapping)
+#   - Stabilization window (scale down): 300s — must be stable for 5 min
+#     before Kubernetes actually removes replicas
+#
+# HTTP request-based scaling:
+#   Not included here — requires either:
+#     a) KEDA with CloudWatch scaler (reads ALB RequestCount metric)
+#     b) Prometheus Adapter (after Prometheus is deployed)
+#   Both are planned as part of the observability stack.
+#   CPU utilization correlates well with HTTP load for a Flask/Gunicorn
+#   app in the meantime.
+#
+# Requirements:
+#   metrics-server must be running in the cluster.
+#   Check: kubectl top pods -n weather
+#   Install if missing:
+#     kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+####################################################################
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: weather-app-hpa
+  namespace: weather
+  labels:
+    app: weather-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: weather-app
+
+  minReplicas: 1
+  maxReplicas: 9
+
+  metrics:
+    # Primary trigger — CPU
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+    # Secondary trigger — Memory
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0      # React immediately to spikes
+      policies:
+        - type: Pods
+          value: 3                        # Add up to 3 pods per interval
+          periodSeconds: 60
+      selectPolicy: Max
+
+    scaleDown:
+      stabilizationWindowSeconds: 300    # Must be stable for 5 min before scaling down
+      policies:
+        - type: Pods
+          value: 1                        # Remove only 1 pod per interval
+          periodSeconds: 120
+      selectPolicy: Min
