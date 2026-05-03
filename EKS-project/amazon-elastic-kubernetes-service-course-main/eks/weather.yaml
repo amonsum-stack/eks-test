@@ -1,0 +1,261 @@
+####################################################################
+# Belgrade Weather App — Kubernetes Manifests
+#
+# Resources:
+#   - Namespace: weather
+#   - ServiceAccount: weather-fetcher (for CronJob ConfigMap write)
+#   - ServiceAccount: weather-app (for Flask pod ConfigMap read)
+#   - Role + RoleBindings: ConfigMap read/write permissions
+#   - CronJob: fetches weather every 10 minutes → writes ConfigMap
+#   - Deployment: Flask app serving the UI
+#   - Service: ClusterIP
+#   - Ingress: ALB internet-facing
+#
+# Before applying:
+#   Replace <YOUR_IMAGE> with your actual image, e.g.:
+#     docker.io/youruser/weather-app:latest
+#     OR
+#     <account>.dkr.ecr.us-east-1.amazonaws.com/weather-app:latest
+#
+# Apply:
+#   kubectl apply -f k8s/weather/weather.yaml
+####################################################################
+
+####################################################################
+# Namespace
+####################################################################
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: weather
+  labels:
+    app.kubernetes.io/managed-by: kubectl
+---
+####################################################################
+# ServiceAccount — CronJob (needs to write ConfigMap)
+####################################################################
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: weather-fetcher
+  namespace: weather
+---
+####################################################################
+# ServiceAccount — Flask app (needs to read ConfigMap)
+####################################################################
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: weather-app
+  namespace: weather
+---
+####################################################################
+# Role — allows ConfigMap create/get/update in weather namespace
+####################################################################
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: weather-configmap-writer
+  namespace: weather
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "update", "patch"]
+---
+####################################################################
+# Role — allows ConfigMap read in weather namespace
+####################################################################
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: weather-configmap-reader
+  namespace: weather
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+---
+####################################################################
+# RoleBinding — CronJob SA → writer role
+####################################################################
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: weather-fetcher-binding
+  namespace: weather
+subjects:
+  - kind: ServiceAccount
+    name: weather-fetcher
+    namespace: weather
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: weather-configmap-writer
+---
+####################################################################
+# RoleBinding — Flask SA → reader role
+####################################################################
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: weather-app-binding
+  namespace: weather
+subjects:
+  - kind: ServiceAccount
+    name: weather-app
+    namespace: weather
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: weather-configmap-reader
+---
+####################################################################
+# CronJob — fetches weather every 10 minutes and writes ConfigMap
+####################################################################
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weather-fetcher
+  namespace: weather
+  labels:
+    app: weather-fetcher
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: weather-fetcher
+        spec:
+          serviceAccountName: weather-fetcher
+          restartPolicy: OnFailure
+
+          containers:
+            - name: fetcher
+              image: <YOUR_IMAGE>
+              command: ["python", "weather-fetcher.py"]
+
+              env:
+                - name: NAMESPACE
+                  value: "weather"
+                - name: CONFIGMAP_NAME
+                  value: "weather-data"
+
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
+---
+####################################################################
+# Deployment — Flask serving pod
+####################################################################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-app
+  namespace: weather
+  labels:
+    app: weather-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-app
+  template:
+    metadata:
+      labels:
+        app: weather-app
+    spec:
+      serviceAccountName: weather-app
+
+      containers:
+        - name: weather-app
+          image: <YOUR_IMAGE>
+          ports:
+            - containerPort: 8080
+              name: http
+
+          env:
+            - name: NAMESPACE
+              value: "weather"
+            - name: CONFIGMAP_NAME
+              value: "weather-data"
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 20
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+---
+####################################################################
+# Service
+####################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather-app
+  namespace: weather
+  labels:
+    app: weather-app
+spec:
+  type: ClusterIP
+  selector:
+    app: weather-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+---
+####################################################################
+# Ingress — ALB internet-facing
+####################################################################
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: weather-app
+  namespace: weather
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+    alb.ingress.kubernetes.io/tags: Environment=demo,ManagedBy=eks-alb-controller,App=weather
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: weather-app
+                port:
+                  number: 80
