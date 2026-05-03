@@ -133,7 +133,7 @@ resource "aws_iam_policy" "backup_s3_policy" {
 # IRSA Role — trusted only by the backup-job ServiceAccount
 # in the demo namespace
 ####################################################################
-/* # using pod identety IRSA on standby 
+ 
 
 data "aws_iam_policy_document" "backup_assume_role" {
   statement {
@@ -172,7 +172,7 @@ resource "aws_iam_role_policy_attachment" "backup_irsa_policy" {
   policy_arn = aws_iam_policy.backup_s3_policy.arn
   role       = aws_iam_role.backup_irsa.name
 }
-*/
+
 ####################################################################
 # Outputs
 ####################################################################
@@ -182,7 +182,8 @@ output "backup_bucket_name" {
   value       = aws_s3_bucket.db_backups.id
 }
 
-output "backup_irsa_role_arn" {
+ output "backup_irsa_role_arn" {
   description = "IAM role ARN to annotate the backup-job ServiceAccount with"
   value       = aws_iam_role.backup_irsa.arn
 }
+

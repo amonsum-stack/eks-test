@@ -14,8 +14,8 @@ kind: ServiceAccount
 metadata:
   name: backup-job
   namespace: demo
-#  annotations: ANNOTTIONS ONLY FOR IRSA
-#    eks.amazonaws.com/role-arn: <backup_irsa_role_arn>
+  annotations: 
+   eks.amazonaws.com/role-arn: <backup_irsa_role_arn>
 ---
 ####################################################################
 # Weekly pg_dump CronJob
