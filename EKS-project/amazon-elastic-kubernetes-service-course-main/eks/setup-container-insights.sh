@@ -134,3 +134,9 @@ echo "  Cluster:   ${CLUSTER_NAME}"
 echo ""
 echo "View the pre-built dashboard:"
 echo "  https://${REGION}.console.aws.amazon.com/cloudwatch/home?region=${REGION}#container-insights:infrastructure"
+
+# it seems the images pulled by demon sets from these repos are old and not viable,
+# untill i fix the script it can be deployed normally but after that use the following
+#   kubectl set image daemonset/cloudwatch-agent \
+#   cloudwatch-agent=public.ecr.aws/cloudwatch-agent/cloudwatch-agent:latest \
+#   -n amazon-cloudwatch
