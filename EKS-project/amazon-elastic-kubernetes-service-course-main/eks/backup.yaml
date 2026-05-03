@@ -8,13 +8,14 @@
 # Replace <backup_irsa_role_arn> with the Terraform output value:
 #   terraform output -raw backup_irsa_role_arn
 ####################################################################
+
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: backup-job
   namespace: demo
-  annotations:
-    eks.amazonaws.com/role-arn: <backup_irsa_role_arn>
+#  annotations: ANNOTTIONS ONLY FOR IRSA
+#    eks.amazonaws.com/role-arn: <backup_irsa_role_arn>
 ---
 ####################################################################
 # Weekly pg_dump CronJob
