@@ -25,7 +25,7 @@ variable "cluster_role_name" {
 variable "use_predefined_role" {
   type        = bool
   description = "Whether to use predefined cluster service role, or create one."
-  default     = false   #da se stavi na true i da se proba sa postojećom rolom, da se vidi da li će raditi
+  default     = false   
 }
 
 # KK Playground. Node role must be called 'eksWorkerNodeRole'

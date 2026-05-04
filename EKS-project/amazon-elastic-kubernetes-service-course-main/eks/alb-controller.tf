@@ -12,7 +12,7 @@
 # After applying, install the controller with Helm
 #
 ####################################################################
-
+/*
 # Fetch the OIDC thumbprint for the cluster's issuer URL.
 # Required to register the OIDC provider with IAM.
 data "tls_certificate" "eks_oidc" {
@@ -35,7 +35,7 @@ resource "aws_iam_openid_connect_provider" "eks_oidc_provider" {
 locals {
   oidc_provider_url = replace(aws_iam_openid_connect_provider.eks_oidc_provider.url, "https://", "")
 }
-
+*/
 
 # Trust policy that allows ONLY the aws-load-balancer-controller ServiceAccount
 # in the kube-system namespace to assume this role.

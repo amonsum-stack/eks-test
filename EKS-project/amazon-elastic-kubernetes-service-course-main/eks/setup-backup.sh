@@ -33,9 +33,9 @@ sed \
 
 echo ""
 echo "Done. Resources created:"
-echo "  ServiceAccount: backup-job (namespace: demo)"
+echo "  ServiceAccount: backup-job (namespace: weather)"
 echo "  CronJob:        postgres-backup (schedule: Sundays 02:00 UTC)"
 echo ""
 echo "To test immediately:"
 echo "  kubectl apply -f backup.yaml  # then trigger the test Job"
-echo "  kubectl logs -n demo job/backup-test"
+echo "  kubectl logs -n weather job/backup-test"

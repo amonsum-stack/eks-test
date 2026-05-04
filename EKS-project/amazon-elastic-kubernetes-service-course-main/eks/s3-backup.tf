@@ -9,7 +9,7 @@
 #   4. Lifecycle policy:
 #        Standard → Glacier Instant Retrieval after 30 days
 #        Glacier  → Delete after 365 days
-#   5. Block all public access
+#   5. Back dont need public access 
 #   6. IAM policy scoped to PutObject/ListBucket on this bucket only
 #   7. IRSA role trusted by the backup-job ServiceAccount
 #
@@ -29,7 +29,6 @@ resource "aws_s3_bucket" "db_backups" {
   }
 }
 
-# Block all public access — backups should never be public
 resource "aws_s3_bucket_public_access_block" "db_backups" {
   bucket = aws_s3_bucket.db_backups.id
 
@@ -59,10 +58,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "db_backups" {
   }
 }
 
-# Lifecycle policy:
-# Transition to Glacier Instant Retrieval after 30 days
-# Delete data after 365 days
-# Clean up old versions after 90 days
+
 resource "aws_s3_bucket_lifecycle_configuration" "db_backups" {
   bucket = aws_s3_bucket.db_backups.id
 
@@ -130,8 +126,7 @@ resource "aws_iam_policy" "backup_s3_policy" {
 }
 
 ####################################################################
-# IRSA Role — trusted only by the backup-job ServiceAccount
-# in the demo namespace
+# IRSA Role — goes to backup-job ServiceAccount in the weather namespace
 ####################################################################
  
 
@@ -148,7 +143,7 @@ data "aws_iam_policy_document" "backup_assume_role" {
     condition {
       test     = "StringEquals"
       variable = "${local.oidc_provider_url}:sub"
-      values   = ["system:serviceaccount:demo:backup-job"]
+      values   = ["system:serviceaccount:weather:backup-job"]
     }
 
     condition {

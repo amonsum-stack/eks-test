@@ -59,15 +59,15 @@ grafana:
     enabled: false
 
   # Pre-configure Prometheus datasource
-  datasources:
-    datasources.yaml:
-      apiVersion: 1
-      datasources:
-        - name: Prometheus
-          type: prometheus
-          url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
-          isDefault: true
-          uid: prometheus
+  # datasources:
+   # datasources.yaml:
+    #  apiVersion: 1
+     # datasources:
+      #  - name: Prometheus
+       #   type: prometheus
+        #  url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+         # isDefault: true
+          # uid: prometheus
 
   # ALB ingress
   ingress:

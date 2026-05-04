@@ -21,21 +21,7 @@ flow to CloudWatch since Prometheus cannot scrape RDS directly.
 
 ---
 
-## Step 1 — Apply EBS CSI driver
-
-```bash
-terraform apply
-```
-
-Verify the addon is running:
-
-```bash
-kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver
-```
-
----
-
-## Step 2 — Deploy Prometheus + Grafana
+## Step 1 — Deploy Prometheus + Grafana
 
 ```bash
 chmod +x eks/setup-prometheus.sh
@@ -43,35 +29,23 @@ chmod +x eks/setup-prometheus.sh
 ```
 
 This script:
-1. Verifies EBS CSI is running
-2. Creates the `gp3` StorageClass and sets it as default
-3. Installs `kube-prometheus-stack` via Helm
-4. Prints the Grafana ALB URL
+1. Installs `kube-prometheus-stack` via Helm
+2. Prints the Grafana ALB URL
 
 ---
 
-## Step 3 — Rebuild and push weather app image
+## Step 2 — Rebuild and push weather app image
 
-The weather app now exposes `/metrics` — rebuild the image:
-
-```bash
-cd weather-app
-docker build -t igior/weather-app:1.3 .
-docker push igior/weather-app:1.3
-```
-
-Update `k8s/weather/weather.yaml` image tag to `1.3` and reapply:
+Use 1.3 image for weather-app
 
 ```bash
 kubectl apply -f k8s/weather/weather.yaml
 ```
 
----
-
-## Step 4 — Apply the ServiceMonitor
+## Step 3 — Apply the ServiceMonitor
 
 ```bash
-kubectl apply -f k8s/weather/weather-servicemonitor.yaml
+kubectl apply -f weather-servicemonitor.yaml
 ```
 
 Verify Prometheus picked it up (allow 30-60 seconds):
@@ -85,7 +59,7 @@ Open http://localhost:9090 → Status → Targets → look for `weather/weather-
 
 ---
 
-## Step 5 — Access Grafana
+## Step 4 — Access Grafana
 
 ```bash
 kubectl get ingress kube-prometheus-stack-grafana -n monitoring \
