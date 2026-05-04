@@ -1,0 +1,131 @@
+####################################################################
+# init-db.yaml
+#
+# One-off Job that creates the two weather tables in RDS postgres.
+# Run once after the namespace and secret are in place:
+#
+#   kubectl apply -f k8s/weather/init-db.yaml
+#   kubectl logs -n weather -l job-name=weather-init-db
+#
+# Safe to re-run — uses CREATE TABLE IF NOT EXISTS.
+# Replace <YOUR_IMAGE> with your actual image before applying.
+####################################################################
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: weather-init-db
+  namespace: weather
+  labels:
+    app: weather-init-db
+spec:
+  ttlSecondsAfterFinished: 300    # Auto-clean after 5 minutes
+  template:
+    metadata:
+      labels:
+        job-name: weather-init-db
+    spec:
+      serviceAccountName: weather-fetcher
+      restartPolicy: OnFailure
+
+      containers:
+        - name: init-db
+          image: <YOUR_IMAGE>
+          command:
+            - python
+            - -c
+            - |
+              import os, psycopg2, logging
+              logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+              log = logging.getLogger(__name__)
+
+              conn = psycopg2.connect(
+                  host=os.environ["DB_HOST"],
+                  port=os.environ.get("DB_PORT", "5432"),
+                  dbname=os.environ["DB_NAME"],
+                  user=os.environ["DB_USER"],
+                  password=os.environ["DB_PASS"],
+                  connect_timeout=10,
+                  sslmode="require"
+              )
+
+              with conn:
+                  with conn.cursor() as cur:
+
+                      log.info("Creating weather_readings table...")
+                      cur.execute("""
+                          CREATE TABLE IF NOT EXISTS weather_readings (
+                              id              BIGSERIAL PRIMARY KEY,
+                              recorded_at     TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+                              temperature     NUMERIC(5,2),
+                              feels_like      NUMERIC(5,2),
+                              humidity        NUMERIC(5,2),
+                              pressure        NUMERIC(7,2),
+                              wind_speed      NUMERIC(5,2),
+                              wind_direction  NUMERIC(5,1),
+                              precipitation   NUMERIC(5,2),
+                              visibility      NUMERIC(6,2),
+                              description     VARCHAR(100)
+                          )
+                      """)
+
+                      cur.execute("""
+                          CREATE INDEX IF NOT EXISTS idx_weather_readings_recorded_at
+                          ON weather_readings (recorded_at DESC)
+                      """)
+
+                      log.info("Creating weather_hourly_stats table...")
+                      cur.execute("""
+                          CREATE TABLE IF NOT EXISTS weather_hourly_stats (
+                              hour_start          TIMESTAMPTZ PRIMARY KEY,
+                              avg_temperature     NUMERIC(5,2),
+                              avg_feels_like      NUMERIC(5,2),
+                              avg_humidity        NUMERIC(5,2),
+                              avg_pressure        NUMERIC(7,2),
+                              avg_wind_speed      NUMERIC(5,2),
+                              avg_wind_direction  NUMERIC(5,1),
+                              total_precipitation NUMERIC(6,2),
+                              avg_visibility      NUMERIC(6,2),
+                              reading_count       INTEGER,
+                              updated_at          TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'UTC')
+                          )
+                      """)
+
+              conn.close()
+              log.info("Database initialised successfully.")
+              log.info("Tables created: weather_readings, weather_hourly_stats")
+
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: port
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: dbname
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

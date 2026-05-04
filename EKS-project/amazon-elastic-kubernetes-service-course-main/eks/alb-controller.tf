@@ -36,7 +36,6 @@ locals {
   oidc_provider_url = replace(aws_iam_openid_connect_provider.eks_oidc_provider.url, "https://", "")
 }
 
-#the OIDC provider block should be put in separete TF since it is used by other services 
 
 # Trust policy that allows ONLY the aws-load-balancer-controller ServiceAccount
 # in the kube-system namespace to assume this role.

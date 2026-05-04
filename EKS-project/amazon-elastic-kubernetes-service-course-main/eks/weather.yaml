@@ -144,6 +144,98 @@ spec:
                   value: "weather"
                 - name: CONFIGMAP_NAME
                   value: "weather-data"
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: host
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: port
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: dbname
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: username
+                - name: DB_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: password
+
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
+---
+####################################################################
+# CronJob — hourly aggregator
+# Runs at :55 every hour, aggregates the previous hour's readings
+# from weather_readings into weather_hourly_stats.
+####################################################################
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weather-aggregator
+  namespace: weather
+  labels:
+    app: weather-aggregator
+spec:
+  schedule: "55 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: weather-aggregator
+        spec:
+          serviceAccountName: weather-fetcher
+          restartPolicy: OnFailure
+
+          containers:
+            - name: aggregator
+              image: <YOUR_IMAGE>
+              command: ["python", "weather-aggregator.py"]
+
+              env:
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: host
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: port
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: dbname
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: username
+                - name: DB_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-credentials
+                      key: password
 
               resources:
                 requests:
@@ -175,6 +267,8 @@ spec:
     spec:
       serviceAccountName: weather-app
 
+      # Spread pods across nodes — at most 1 weather-app pod per node.
+      # preferredDuring means scheduler still places pod if only 1 node available.
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
