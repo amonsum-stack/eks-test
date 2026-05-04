@@ -1,0 +1,165 @@
+####################################################################
+# prometheus-values.yaml
+#
+# Helm values for kube-prometheus-stack.
+# Sized for a 3-node lab cluster (t3.medium nodes).
+#
+# Note: Persistence disabled — EBS CSI addon blocked by lab SCP.
+# Prometheus and Grafana use emptyDir. Data lost on pod restart
+# but metrics re-populate quickly from live scraping.
+#
+# What's enabled:
+#   - Prometheus      (metrics collection, no persistence)
+#   - Grafana         (dashboards, no persistence, ALB ingress)
+#   - Alertmanager    (alert routing)
+#   - Node Exporter   (per-node metrics)
+#   - kube-state-metrics (K8s object metrics)
+####################################################################
+
+####################################################################
+# Prometheus
+####################################################################
+prometheus:
+  prometheusSpec:
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    retention: 6h          # Short retention since no persistent storage
+
+    # No persistence — emptyDir
+    storageSpec: {}
+
+    # Discover ServiceMonitors from all namespaces
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelector: {}
+    podMonitorNamespaceSelector: {}
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+####################################################################
+# Grafana
+####################################################################
+grafana:
+  enabled: true
+
+  adminUser: admin
+  adminPassword: admin
+
+  # No persistence — emptyDir
+  persistence:
+    enabled: false
+
+  # Pre-configure Prometheus datasource
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+          isDefault: true
+          uid: prometheus
+
+  # ALB ingress
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/healthcheck-path: /api/health
+      alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+      alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+      alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+      alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+      alb.ingress.kubernetes.io/tags: Environment=demo,ManagedBy=helm,App=grafana
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    hosts:
+      - ""
+    path: /
+    pathType: Prefix
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s/"
+    analytics:
+      reporting_enabled: false
+
+####################################################################
+# Alertmanager
+####################################################################
+alertmanager:
+  enabled: true
+
+  alertmanagerSpec:
+    storage: {}
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+
+####################################################################
+# Node Exporter
+####################################################################
+nodeExporter:
+  enabled: true
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+####################################################################
+# kube-state-metrics
+####################################################################
+kubeStateMetrics:
+  enabled: true
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+####################################################################
+# Disable — not accessible in managed EKS
+####################################################################
+kubeEtcd:
+  enabled: false
+
+kubeControllerManager:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+kubeProxy:
+  enabled: false
