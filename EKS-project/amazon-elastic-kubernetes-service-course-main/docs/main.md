@@ -64,7 +64,7 @@ variable "use_predefined_role" {
 
 -- Also keep in mind the following command <aws eks update-kubeconfig --region us-east-1 --name demo-eks> we need it so kubectl can find the cluster and authenticate with it.
 
--- There is a cloud watch alarm and sns notification system deployed. You can add your email on which you want to receive sns messages when you go terraform apply. Or you can add it in variables.tf or tfvars file. Or maybe you can use the following command after terraform init <export TF_VAR_alert_email="you@example.com">
+-- There is a cloud watch alarm and sns notification system deployed. You can add your email on which you want to receive sns messages when you go terraform apply. Or you can add it in variables.tf or tfvars file. Or maybe you can use the following command after terraform init <export TF_VAR_alert_email="you@example.com">. SNS is for cloudwatch alarms as well as S3 notification which can notify us when the files are being stored on S3. 
 
 
 2. After terraform is deployed and nodes are in a ready state you can begin deploying other parts of the project.
@@ -82,10 +82,17 @@ variable "use_predefined_role" {
 5. Apply the script, use chmod +x <create-db-secret.sh>, the script will create two kubernetes secrets that are needed for accessing the postgres database running on the RDS instance. Apply <db-test-job.yaml> and check the results with "kubectl logs -n demo db-connection-test", you should see database that is created. 
 
 6. Now you can apply <weather.yaml> main file which contains the following.
---
---
---
+-- Namespace, although not needed since it is implemented eariler, but it keeps things originized.
+-- Two service accounts, for app and fetcher that gets the data which is used by the app
+-- Two roles, one for writing the data with config map and the other for reading the data
+-- Role bindings, one that goes to the crone job that writes the data and the other that goes to flask that reads the data
+-- Cron job that fetches the data from open meteo, using "weather-fetcher.py" inside the image. Runs every 10 min
+-- Cron job hourly agregator, this was added later, since i thought that it would be nice addition to have hourly data agregated in the RDS. Not needed esentially. Using "weather-aggregator.py".
+-- Deployment of the app. Important to note is the affinity setting allowing us to place 1 pod across each node. 
+-- Service.type.ClusterIP - we are using this since we are already implementing aws ALB controller that is routing via 'target-type: ip' that goes directly to the PODs. The ALB controller actually gets the info from the ingress finds the pods with Service selector and then register their ip as ALB target group. The most important part in the kubernetes service here is the Selector since that points to the correct pods. Using service type LoadBalancer would probably deploy new load balancer per service i think (didn't test it).
+-- Finally ingress allows us to provision ALB via controllers (marked with ingressClassName) and bind them to this deployment. Ingress tells us its http traffic with "catch all" prefix /. Backend show where the traffic is routed with the service.
 
+Something about the app. The app is a light-weight python app that display some weather parameters for Belgrade Serbia. It works along with featcher.py which pulls data from the open-meteo api and agregator.py that agregates avarage values every hour for the RDS. Important part of the app is the fetcher.py and cronjob that utilizies this to write new data to a config map that is being injected into the system, so the data stays updated.
 
 
 7. After applying <weather.yaml> you can apply <init-db.yaml> which will initiate and create databases in postgres for weather app. It is important to apply this after the main file since the init-db needs service account from the 'weather-fetcher' which is located in the <weather.yaml>

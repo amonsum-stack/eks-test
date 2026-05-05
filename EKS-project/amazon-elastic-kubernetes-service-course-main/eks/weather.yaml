@@ -11,18 +11,10 @@
 #   - Service: ClusterIP
 #   - Ingress: ALB internet-facing
 #
-# Before applying:
-#   Replace <YOUR_IMAGE> with your actual image, e.g.:
-#     docker.io/youruser/weather-app:latest
-#     OR
-#     <account>.dkr.ecr.us-east-1.amazonaws.com/weather-app:latest
-#
-# Apply:
-#   kubectl apply -f k8s/weather/weather.yaml
 ####################################################################
 
 ####################################################################
-# Namespace
+# Namespace, not needed but just in case
 ####################################################################
 apiVersion: v1
 kind: Namespace

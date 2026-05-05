@@ -13,7 +13,7 @@
 #   - RDS instance status check failed
 #
 ####################################################################
-
+/*
 
 # High CPU across any node in the ASG
 resource "aws_cloudwatch_metric_alarm" "eks_node_cpu_high" {
@@ -64,7 +64,8 @@ resource "aws_cloudwatch_metric_alarm" "eks_node_status_check" {
     Name = "eks-node-status-check-failed"
   }
 }
-
+*/
+# node alarms are disabled since we are using prometheus and grafana for monitoring.
 ####################################################################
 # RDS Alarms
 ####################################################################
