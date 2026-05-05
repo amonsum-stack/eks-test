@@ -18,14 +18,14 @@
 # SNS Topics
 ####################################################################
 
-resource "aws_sns_topic" "eks_alarms" {
-  name = "eks-node-alarms"
+#resource "aws_sns_topic" "eks_alarms" {
+#  name = "eks-node-alarms"
 
  # tags = {
  #  Name    = "eks-node-alarms"
  #   Purpose = "EKS node CPU and status check alerts"
  # }
-}
+#}
 
 # Issue with tags, probably lab environment, so ignoring for now
 
@@ -51,11 +51,11 @@ resource "aws_sns_topic" "backup_events" {
 # Email Subscriptions — all pointing to same address
 ####################################################################
 
-resource "aws_sns_topic_subscription" "eks_alarms_email" {
-  topic_arn = aws_sns_topic.eks_alarms.arn
-  protocol  = "email"
-  endpoint  = var.alert_email
-}
+#resource "aws_sns_topic_subscription" "eks_alarms_email" {
+#  topic_arn = aws_sns_topic.eks_alarms.arn
+#  protocol  = "email"
+#  endpoint  = var.alert_email
+#}
 
 resource "aws_sns_topic_subscription" "rds_alarms_email" {
   topic_arn = aws_sns_topic.rds_alarms.arn
@@ -102,9 +102,9 @@ resource "aws_sns_topic_policy" "backup_events_s3" {
 # Outputs
 ####################################################################
 
-output "sns_eks_alarms_arn" {
-  value = aws_sns_topic.eks_alarms.arn
-}
+#output "sns_eks_alarms_arn" {
+#  value = aws_sns_topic.eks_alarms.arn
+#}
 
 output "sns_rds_alarms_arn" {
   value = aws_sns_topic.rds_alarms.arn
