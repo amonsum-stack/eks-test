@@ -69,7 +69,8 @@ variable "use_predefined_role" {
 
 2. After terraform is deployed and nodes are in a ready state you can begin deploying other parts of the project.
 
-3. Deploy ALB controller with HELM and <alb-controller-values.yaml>. Ensure HELM is installed and updated.
+3. Deploy ALB controller with HELM and <alb-controller-values.yaml>. Ensure HELM is installed and updated. 
+-- NOTE: in the values file add the AlbControllerIrsaRoleArn on <annotations.eks.amazonaws.com/role-arn: Irsa role arn added>
 
 #   helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 #     -n kube-system \
@@ -79,7 +80,7 @@ variable "use_predefined_role" {
 
 4. Create "weather" and "demo" namespace with the command 'kubectl create namespace wheater' or declarativley in a file. Demo namespace is probably not needed here, but it can help us out in the next step testing the accesability of the database.
 
-5. Apply the script, use chmod +x <create-db-secret.sh>, the script will create two kubernetes secrets that are needed for accessing the postgres database running on the RDS instance. Apply <db-test-job.yaml> and check the results with "kubectl logs -n demo db-connection-test", you should see database that is created. 
+5. Apply the script, use chmod +x <create-db-secret.sh>, the script will create two kubernetes secrets that are needed for accessing the postgres database running on the RDS instance. Apply <db-test-job.yaml> and check the results with "kubectl logs -n demo job/db-connection-test", you should see database that is created. 
 
 6. Now you can apply <weather.yaml> main file which contains the following.
 -- Namespace, although not needed since it is implemented eariler, but it keeps things originized.
@@ -108,4 +109,43 @@ Something about the app. The app is a light-weight python app that display some 
 -- This is due inability to apply EBS-CSI addon and needed roles.
 -- Lab enviroment doesn't allow EBS-CSI so grafana and prometheus are not persistant. And we cannot make PVC. 
 -- In a real enviroment EBS-CSI should be installed. 
+
+10. Adding network policies with <network-policies.yaml> will restrict pod traffic and how pods communicate. It is recomended to use aws vpc cni with optional configuration settings {"enableNetworkPolicy": "true"}, Ive added the addon via web UI, since the lab doesn't allow modifications with cli. If you manage to get it with cli or terraform it should work as well. 
+# NOTE that trying to get network policies to work with other CNIs like Calico can cause some trouble. Im not 100% sure but when deploying the cluster i presume aws cni is by defult managing network conecctions between pods and nodes. Installing calico or calico policies can cause trouble since caliclo is making virtual interfaces like <cali*> while aws cni already names them <eni*>. I tried changing these setting with caliclo but without sucess, it ended in deleteing and redeploying the nodes. 
+-- Look at the details in the network-policies.yaml regarding some specifics that could change in your deployment
+
+-- Commands that can help you with testing these:
+- kubectl run test-pod --image=curlimages/curl -n weather --rm -it -- sh | then use curl --max-time 5 http://<fetcher-pod-ip>:8080
+- In order to get fetcher pod ip you can use kubectl get pods -n weather -o wide | grep fetcher
+
+
+-- We can test if the pods can go outside with kubectl run test-pod --image=curlimages/curl -n weather --rm -it -- sh and curl --max-time 5 https://google.com
+
+
+-- To test connectivity to RDS we can:
+-- > terraform output rds_endpoint  and then 
+kubectl exec -n weather -it $(kubectl get pods -n weather -l app=weather-app -o jsonpath='{.items[0].metadata.name}') -- python3 -c "
+import psycopg2, os
+conn = psycopg2.connect(
+    host='$(terraform output -raw rds_endpoint | cut -d: -f1)',
+    port=5432,
+    dbname='appdb',
+    user='appuser',
+    password='test',
+    connect_timeout=5
+)
+print('Connected successfully!')
+conn.close()
+"
+# The above command should show us that weather-app pods are going to RDS
+
+-- For unlabeled pods that cannot reach rds:
+kubectl run rds-test --image=postgres:16-alpine -n weather --rm -it -- sh
+- once inside go for psql -h <rds-endpoint> -U appuser -d appdb -c "SELECT 1;" --connect-timeout=5
+
+-- For pods in different namespace that cannot reach rds:
+kubectl run rds-test --image=postgres:16-alpine -n default --rm -it -- sh
+- once inside go for psql -h <rds-endpoint> -U appuser -d appdb -c "SELECT 1;" --connect-timeout=5
+
+
 

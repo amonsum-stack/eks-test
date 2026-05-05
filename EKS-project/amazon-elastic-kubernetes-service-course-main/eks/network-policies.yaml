@@ -1,6 +1,4 @@
 ####################################################################
-# Network Policies — Weather Namespace
-#
 # Overview:
 #   - weather-app pods: only accept ingress from the VPC CIDR
 #     (ALB hits pods directly via target-type: ip), deny all else.
@@ -17,17 +15,15 @@
 #   reaches pods directly using its own IP within the VPC.
 #   Since that source IP is not a pod, we cannot use podSelector
 #   to restrict it. Instead we allow ingress from the VPC CIDR
-#   block (10.0.0.0/8 covers the default AWS VPC range).
+#   block (172.31.0.0/16 covers the default AWS VPC range).
 #   Adjust the cidr below if your VPC uses a different range.
-#
-# Apply:
-#   kubectl apply -f network-policies.yaml
-#
 ####################################################################
 
 ####################################################################
 # Default deny — all ingress and egress in the weather namespace.
 # This is the baseline. Everything below carves out exceptions.
+# Needed because Kubernetes defaults to allow all traffic if no policies exist.
+# THERE IS NO IMPLICIT DENY IN KUBERNETES
 ####################################################################
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -35,7 +31,7 @@ metadata:
   name: default-deny-all
   namespace: weather
 spec:
-  podSelector: {}       # Applies to all pods in the namespace
+  podSelector: {}       
   policyTypes:
     - Ingress
     - Egress
@@ -44,7 +40,8 @@ spec:
 # weather-app — Flask deployment
 #
 # Ingress:
-#   - Allow from VPC CIDR on port 8080 (ALB direct pod targeting)
+#   - Allow from VPC CIDR on port 8080 
+#   - This allow us to reach the app via ALB
 #
 # Egress:
 #   - Allow to RDS private subnets on port 5432 (Postgres)
@@ -64,19 +61,14 @@ spec:
     - Egress
 
   ingress:
-    # Allow ALB traffic — ALB hits pods directly from within the VPC.
-    # The source is the ALB's private IP, not a pod, so we allow
-    # the entire VPC CIDR. Tighten this to your ALB subnet CIDRs
-    # if you want stricter control.
     - from:
         - ipBlock:
-            cidr: 10.0.0.0/8
+            cidr: 172.31.0.0/16
       ports:
         - protocol: TCP
           port: 8080
 
   egress:
-    # Allow DNS resolution (kube-dns in kube-system)
     - to:
         - namespaceSelector:
             matchLabels:
@@ -90,27 +82,31 @@ spec:
         - protocol: TCP
           port: 53
 
-    # Allow Postgres to RDS private subnets.
-    # RDS lives in the private subnets (10.0.X.X range).
-    # Adjust cidr to match your private subnet range if different.
-    - to:
+    - to: # this part allows flask to comunicate with RDS
         - ipBlock:
-            cidr: 10.0.0.0/8
+            cidr: 172.31.0.0/16
       ports:
         - protocol: TCP
           port: 5432
+    - to: # this part allows Open-Meteo API fallback, excluding the private CIDR 
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 172.31.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
 ---
 ####################################################################
 # weather-fetcher CronJob
 #
 # Ingress:
-#   - None (CronJob, never needs to receive traffic)
+#   - None (CronJob, doesn't need to receive any traffic)
 #
 # Egress:
 #   - Allow DNS
 #   - Allow to RDS on port 5432 (writes weather readings)
-#   - Allow to internet on port 443 (Open-Meteo API over HTTPS)
-#   - Allow to Kubernetes API on port 443 (writes ConfigMap)
+#   - Allow to internet on port 443 to reach Open-Meteo API and Kubernetes API
 ####################################################################
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -125,10 +121,9 @@ spec:
     - Ingress
     - Egress
 
-  ingress: []   # No ingress allowed
+  ingress: []   
 
   egress:
-    # DNS
     - to:
         - namespaceSelector:
             matchLabels:
@@ -142,30 +137,18 @@ spec:
         - protocol: TCP
           port: 53
 
-    # RDS Postgres
     - to:
         - ipBlock:
-            cidr: 10.0.0.0/8
+            cidr: 172.31.0.0/16
       ports:
         - protocol: TCP
           port: 5432
 
-    # Open-Meteo API (and any other external HTTPS)
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
             except:
-              - 10.0.0.0/8       # Exclude internal — use specific rule above
-              - 172.16.0.0/12
-              - 192.168.0.0/16
-      ports:
-        - protocol: TCP
-          port: 443
-
-    # Kubernetes API server (for ConfigMap writes)
-    - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
+              - 172.31.0.0/16       
       ports:
         - protocol: TCP
           port: 443
@@ -194,10 +177,9 @@ spec:
     - Ingress
     - Egress
 
-  ingress: []   # No ingress allowed
+  ingress: []   
 
   egress:
-    # DNS
     - to:
         - namespaceSelector:
             matchLabels:
@@ -211,10 +193,9 @@ spec:
         - protocol: TCP
           port: 53
 
-    # RDS Postgres only
     - to:
         - ipBlock:
-            cidr: 10.0.0.0/8
+            cidr: 172.31.0.0/16
       ports:
         - protocol: TCP
           port: 5432
@@ -246,7 +227,6 @@ spec:
   ingress: []
 
   egress:
-    # DNS
     - to:
         - namespaceSelector:
             matchLabels:
@@ -260,22 +240,18 @@ spec:
         - protocol: TCP
           port: 53
 
-    # RDS Postgres
     - to:
         - ipBlock:
-            cidr: 10.0.0.0/8
+            cidr: 172.31.0.0/16
       ports:
         - protocol: TCP
           port: 5432
 
-    # S3 and AWS APIs (HTTPS)
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
             except:
-              - 10.0.0.0/8
-              - 172.16.0.0/12
-              - 192.168.0.0/16
+              - 172.31.0.0/16 #this should be checked according to VPC CIDR
       ports:
         - protocol: TCP
           port: 443
