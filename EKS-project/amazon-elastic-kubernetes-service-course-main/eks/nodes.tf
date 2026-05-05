@@ -53,6 +53,11 @@ resource "aws_iam_role" "node_instance_role" {
   path               = "/"
 }
 
+resource "aws_iam_role_policy_attachment" "node_instance_role_secrets_manager" {
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+  role       = aws_iam_role.node_instance_role.name
+}
+
 resource "aws_iam_role_policy_attachment" "node_instance_role_EKSWNP" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
   role       = aws_iam_role.node_instance_role.name

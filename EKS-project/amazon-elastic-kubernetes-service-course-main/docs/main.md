@@ -80,7 +80,23 @@ variable "use_predefined_role" {
 
 4. Create "weather" and "demo" namespace with the command 'kubectl create namespace wheater' or declarativley in a file. Demo namespace is probably not needed here, but it can help us out in the next step testing the accesability of the database.
 
-5. Apply the script, use chmod +x <create-db-secret.sh>, the script will create two kubernetes secrets that are needed for accessing the postgres database running on the RDS instance. Apply <db-test-job.yaml> and check the results with "kubectl logs -n demo job/db-connection-test", you should see database that is created. 
+5. apply that helm for external secrets and external secrets yaml , not sure for now if this should be done after wheater.yaml since the service acocunt, but i think those are not needed since the service roles are pulled from nodes 
+
+irsa didnt work for the external secrets, but when removed IRSA, external secrets worked probably from the node roles or broad lab permisions. Tehnically without IRSA and without specific roles, ESO pods that run on nodes should be able to get/inherit credentials of worker nodes that nodes use to access secret manager
+
+ESO worked most probably due to broad lab permissions 
+
+i patched the nodes tf just in case 
+
+
+resource "aws_iam_role_policy_attachment" "node_instance_role_secrets_manager" {
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+  role       = aws_iam_role.node_instance_role.name
+}
+so the external secrets pods can pull this from the nodes as they can inherit those credentials, not 100% sure but it works
+
+see where the helm chart is for the external secrets 
+# 
 
 6. Now you can apply <weather.yaml> main file which contains the following.
 -- Namespace, although not needed since it is implemented eariler, but it keeps things originized.
@@ -149,3 +165,9 @@ kubectl run rds-test --image=postgres:16-alpine -n default --rm -it -- sh
 
 
 
+
+
+# Things that can be added to the deployment 
+-- Rote 53 and 
+
+-- ACM certificates for HTTPS traffic. In this case i think ALB would use the certificate to terminate TLS and the pods would be getting normal traffic. Ingress should also be changed with more annotations that point to 443, https and redirect rules in order for pods to get the traffic.
