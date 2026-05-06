@@ -170,6 +170,49 @@ resource "aws_vpc_security_group_egress_rule" "control_plane_egress_to_node_secu
   ip_protocol                  = "TCP"
 }
 
+#IAM policy and role for cluster autoscaler 
+resource "aws_iam_policy" "cluster_autoscaler" {
+  name        = "eks-cluster-autoscaler"
+  description = "Allows Cluster Autoscaler to manage the ASG"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "DescribeASG"
+        Effect = "Allow"
+        Action = [
+          "autoscaling:DescribeAutoScalingGroups",
+          "autoscaling:DescribeAutoScalingInstances",
+          "autoscaling:DescribeLaunchConfigurations",
+          "autoscaling:DescribeScalingActivities",
+          "autoscaling:DescribeTags",
+          "ec2:DescribeImages",
+          "ec2:DescribeInstanceTypes",
+          "ec2:DescribeLaunchTemplateVersions",
+          "ec2:GetInstanceTypesFromInstanceRequirements",
+          "eks:DescribeNodegroup"
+        ]
+        Resource = ["*"]
+      },
+      {
+        Sid    = "ModifyASG"
+        Effect = "Allow"
+        Action = [
+          "autoscaling:SetDesiredCapacity",
+          "autoscaling:TerminateInstanceInAutoScalingGroup"
+        ]
+        Resource = ["*"]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "node_cluster_autoscaler" {
+  policy_arn = aws_iam_policy.cluster_autoscaler.arn
+  role       = aws_iam_role.node_instance_role.name
+}
+
 # Launch Template defines how the autoscaling group will create worker nodes.
 resource "aws_launch_template" "node_launch_template" {
   name = "NodeLaunchTemplate"
@@ -196,6 +239,8 @@ resource "aws_launch_template" "node_launch_template" {
 
   tags = {
     "Name" = "NodeLaunchTemplate"
+    "k8s.io/cluster-autoscaler/enabled"  = "true"
+    "k8s.io/cluster-autoscaler/demo-eks" = "owned"
   }
 
   image_id = data.aws_ssm_parameter.node_ami.value
@@ -211,6 +256,8 @@ resource "aws_launch_template" "node_launch_template" {
 
     tags = {
       Name = "worker-node"
+      "k8s.io/cluster-autoscaler/enabled"         = "true"
+      "k8s.io/cluster-autoscaler/demo-eks"        = "owned"
     }
   }
 
@@ -257,6 +304,13 @@ Resources:
       LaunchTemplate:
         LaunchTemplateId: "${aws_launch_template.node_launch_template.id}"
         Version: "${aws_launch_template.node_launch_template.latest_version}"
+      Tags:
+        - Key: "k8s.io/cluster-autoscaler/enabled"
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: "k8s.io/cluster-autoscaler/demo-eks"
+          Value: "owned"
+          PropagateAtLaunch: true
     UpdatePolicy:
     # Ignore differences in group size properties caused by scheduled actions
       AutoScalingScheduledAction:
