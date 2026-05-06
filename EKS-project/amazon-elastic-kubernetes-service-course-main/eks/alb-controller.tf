@@ -2,40 +2,9 @@
 #
 # AWS Load Balancer Controller - IRSA Setup
 #
-# This file sets up:
-#   1. OIDC Identity Provider for the EKS cluster
-#   2. IAM role for the ALB controller ServiceAccount (IRSA pattern)
-#   3. Attaches the existing loadbalancer_policy to the IRSA role
-#
-# The existing loadbalancer_policy (eksPolicy) attached to the node
-#
 # After applying, install the controller with Helm
 #
 ####################################################################
-/*
-# Fetch the OIDC thumbprint for the cluster's issuer URL.
-# Required to register the OIDC provider with IAM.
-data "tls_certificate" "eks_oidc" {
-  url = aws_eks_cluster.demo_eks.identity[0].oidc[0].issuer
-}
-
-# Register the cluster's OIDC endpoint as a trusted identity provider in IAM.
-# This is what enables IRSA — pods can assume IAM roles via projected ServiceAccount tokens.
-resource "aws_iam_openid_connect_provider" "eks_oidc_provider" {
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.eks_oidc.certificates[0].sha1_fingerprint]
-  url             = aws_eks_cluster.demo_eks.identity[0].oidc[0].issuer
-
-  tags = {
-    Name = "eks-oidc-provider"
-  }
-}
-
-# Extract the OIDC provider hostname (without https://) for use in trust policy conditions.
-locals {
-  oidc_provider_url = replace(aws_iam_openid_connect_provider.eks_oidc_provider.url, "https://", "")
-}
-*/
 
 # Trust policy that allows ONLY the aws-load-balancer-controller ServiceAccount
 # in the kube-system namespace to assume this role.
