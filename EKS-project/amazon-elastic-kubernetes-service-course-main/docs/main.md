@@ -96,7 +96,11 @@ resource "aws_iam_role_policy_attachment" "node_instance_role_secrets_manager" {
 so the external secrets pods can pull this from the nodes as they can inherit those credentials, not 100% sure but it works
 
 see where the helm chart is for the external secrets 
-# 
+# helm install external-secrets \
+  external-secrets/external-secrets \
+  -n external-secrets \
+  --create-namespace \
+  --wait
 
 6. Now you can apply <weather.yaml> main file which contains the following.
 -- Namespace, although not needed since it is implemented eariler, but it keeps things originized.
@@ -127,8 +131,12 @@ Something about the app. The app is a light-weight python app that display some 
 -- In a real enviroment EBS-CSI should be installed. 
 
 10. Adding network policies with <network-policies.yaml> will restrict pod traffic and how pods communicate. It is recomended to use aws vpc cni with optional configuration settings {"enableNetworkPolicy": "true"}, Ive added the addon via web UI, since the lab doesn't allow modifications with cli. If you manage to get it with cli or terraform it should work as well. 
-# NOTE that trying to get network policies to work with other CNIs like Calico can cause some trouble. Im not 100% sure but when deploying the cluster i presume aws cni is by defult managing network conecctions between pods and nodes. Installing calico or calico policies can cause trouble since caliclo is making virtual interfaces like <cali*> while aws cni already names them <eni*>. I tried changing these setting with caliclo but without sucess, it ended in deleteing and redeploying the nodes. 
+# NOTE that trying to get network policies to work with other CNIs like Calico can cause some trouble. Im not 100% sure but when deploying the cluster i presume aws cni is by defult managing network conecctions between pods and nodes. Installing calico or calico policies can cause trouble since calico is making virtual interfaces like <cali*> while aws cni already names them <eni*>. I tried changing these setting with calico but without sucess, i ended up with deleteing and redeploying the nodes. 
 -- Look at the details in the network-policies.yaml regarding some specifics that could change in your deployment
+
+after installig vpc CNI restart the deamon set just in case so the changes take effect
+# kubectl rollout restart daemonset aws-node -n kube-system
+
 
 -- Commands that can help you with testing these:
 - kubectl run test-pod --image=curlimages/curl -n weather --rm -it -- sh | then use curl --max-time 5 http://<fetcher-pod-ip>:8080
@@ -171,3 +179,44 @@ kubectl run rds-test --image=postgres:16-alpine -n default --rm -it -- sh
 -- Rote 53 and 
 
 -- ACM certificates for HTTPS traffic. In this case i think ALB would use the certificate to terminate TLS and the pods would be getting normal traffic. Ingress should also be changed with more annotations that point to 443, https and redirect rules in order for pods to get the traffic.
+
+
+node autoscaler can be tested with kubectl scale deployment weather-app -n weather --replicas=15
+wathc nodes as they get deplyoed, later just sclade down kubectl scale deployment weather-app -n weather --replicas=3
+
+
+12. adding kyverno policies for extra security
+-- add helm repo then install with helm 
+# helm install kyverno kyverno/kyverno \
+  -n kyverno \
+  --create-namespace \
+  --wait
+
+  #   kubectl get policyreport -A
+
+  for kyverno policies if you want to do some testing with random pods and you see blocking you can temporarly patch the policies to allow testing with 
+  kubectl patch clusterpolicy require-app-label \
+  -p '{"spec":{"validationFailureAction":"Audit"}}' \
+  --type merge
+
+kubectl patch clusterpolicy require-resource-limits \
+  -p '{"spec":{"validationFailureAction":"Audit"}}' \
+  --type merge
+
+kubectl patch clusterpolicy disallow-latest-tag \
+  -p '{"spec":{"validationFailureAction":"Audit"}}' \
+  --type merge
+
+  after that switch backt to enforce 
+
+  kubectl patch clusterpolicy require-app-label \
+  -p '{"spec":{"validationFailureAction":"Enforce"}}' \
+  --type merge
+
+kubectl patch clusterpolicy require-resource-limits \
+  -p '{"spec":{"validationFailureAction":"Enforce"}}' \
+  --type merge
+
+kubectl patch clusterpolicy disallow-latest-tag \
+  -p '{"spec":{"validationFailureAction":"Enforce"}}' \
+  --type merge

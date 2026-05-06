@@ -1,0 +1,239 @@
+####################################################################
+# 1. Require resource limits on all containers
+# Containers without limits can consume all node resources and starve other pods. 
+####################################################################
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+  annotations:
+    policies.kyverno.io/title: Require Resource Limits
+    policies.kyverno.io/description: >
+      All containers must have CPU and memory limits defined
+      to prevent resource starvation on nodes.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-container-limits
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - weather
+                - demo
+      exclude:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - kube-system
+                - kyverno
+                - monitoring
+                - external-secrets
+                - amazon-cloudwatch
+      validate:
+        message: "CPU and memory limits are required for all containers."
+        pattern:
+          spec:
+            containers:
+              - name: "*"
+                resources:
+                  limits:
+                    memory: "?*"
+                    cpu: "?*"
+---
+####################################################################
+# 2. Disallow containers running as root
+#
+# Running as root inside a container is a security risk —
+# if the container is compromised, the attacker has root on
+# the host if they can escape the container runtime.
+# Applies in Audit mode first so you can see what would fail
+# before enforcing.
+####################################################################
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-root-user
+  annotations:
+    policies.kyverno.io/title: Disallow Root User
+    policies.kyverno.io/description: >
+      Containers should not run as root. Use a non-root user
+      in your Dockerfile or set securityContext.runAsNonRoot.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: check-runasnonroot
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - weather
+                - demo
+      validate:
+        message: "Containers must not run as root. Set securityContext.runAsNonRoot: true."
+        pattern:
+          spec:
+            containers:
+              - name: "*"
+                securityContext:
+                  runAsNonRoot: true
+---
+####################################################################
+# 3. Require specific labels on all pods
+# I've placed app here since it goes with my deployment but it can be changed accordigly.
+####################################################################
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-app-label
+  annotations:
+    policies.kyverno.io/title: Require App Label
+    policies.kyverno.io/description: >
+      All pods must have an 'app' label. This is required for
+      network policies, monitoring selectors, and cost tracking.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-app-label
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - weather
+                - demo
+      validate:
+        message: "Pod must have an 'app' label."
+        pattern:
+          metadata:
+            labels:
+              app: "?*"
+---
+####################################################################
+# 4. Disallow latest image tag
+#
+# Using :latest means you can't tell what code is actually running.
+####################################################################
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: Disallow Latest Tag
+    policies.kyverno.io/description: >
+      Container images must use a specific version tag, not
+      'latest'. Pinned tags ensure reproducible deployments
+      and reliable rollbacks.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-image-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - weather
+                - demo
+      validate:
+        message: "Image tag ':latest' is not allowed. Use a specific version tag e.g. :1.3"
+        pattern:
+          spec:
+            containers:
+              - name: "*"
+                image: "!*:latest"
+---
+####################################################################
+# 5. Require readiness probes on Deployments
+#
+# Without a readiness probe, Kubernetes sends traffic to a pod
+# the moment it starts — before the app is actually ready.
+####################################################################
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-readiness-probe
+  annotations:
+    policies.kyverno.io/title: Require Readiness Probe
+    policies.kyverno.io/description: >
+      All Deployment containers must define a readiness probe
+      so Kubernetes only routes traffic to ready pods.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: check-readiness-probe
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - weather
+                - demo
+      validate:
+        message: "Containers in Deployments must define a readinessProbe."
+        pattern:
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: "*"
+                    readinessProbe:
+                      (httpGet | tcpSocket | exec): "*"
+---
+####################################################################
+# 6. Block privileged containers
+#
+# Privileged containers have full access to the host — effectively
+# root on the node. There is no legitimate reason for this in
+# your workloads.
+####################################################################
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privileged-containers
+  annotations:
+    policies.kyverno.io/title: Disallow Privileged Containers
+    policies.kyverno.io/description: >
+      Privileged containers have unrestricted host access and
+      should never be used in production workloads.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-privileged
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kyverno
+                - monitoring
+                - external-secrets
+                - amazon-cloudwatch
+      validate:
+        message: "Privileged containers are not allowed."
+        pattern:
+          spec:
+            containers:
+              - name: "*"
+                =(securityContext):
+                  =(privileged): false

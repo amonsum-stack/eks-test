@@ -47,6 +47,9 @@ spec:
     spec:
       backoffLimit: 2             # Retry up to 2 times on failure
       template:
+        metadata:
+          labels:
+            app: postgres-backup
         spec:
           serviceAccountName: backup-job   # IRSA-annotated SA
           restartPolicy: OnFailure
@@ -139,8 +142,8 @@ spec:
 # the full pipeline without waiting for Sunday.
 #
 # Deploy:   kubectl apply -f k8s/backup/backup-test-job.yaml
-# Logs:     kubectl logs -n demo job/backup-test
-# Cleanup:  kubectl delete job backup-test -n demo
+# Logs:     kubectl logs -n weather job/backup-test
+# Cleanup:  kubectl delete job backup-test -n weather
 ####################################################################
 apiVersion: batch/v1
 kind: Job
@@ -150,6 +153,9 @@ metadata:
 spec:
   ttlSecondsAfterFinished: 120 # Deletes the job after 2 minutes
   template:
+    metadata:
+      labels:
+        app: postgres-backup-test
     spec:
       serviceAccountName: backup-job
       restartPolicy: Never
