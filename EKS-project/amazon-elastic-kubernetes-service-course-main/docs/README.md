@@ -133,7 +133,7 @@ kubectl get deployment -n kube-system aws-load-balancer-controller
 
 ESO syncs credentials from AWS Secrets Manager into Kubernetes Secrets automatically.
 
-> Create both namespaces kubectl createnamespace demo/weather
+> Create both namespaces `kubectl createnamespace demo/weather`
 
 ```bash
 helm repo add external-secrets https://charts.external-secrets.io
@@ -197,7 +197,8 @@ Get the ALB URL and test (allow 60–90 seconds for ALB provisioning):
 ```bash
 kubectl get ingress weather-app -n weather
 ```
-
+You can also do this from the Web-UI. Go to ec2>loadbalancers in the main page you will see ALB URL copy that in the browser.
+Dont forget to add http://ALB-URL
 ---
 
 ### 6. Enable Horizontal Pod Autoscaling
@@ -276,6 +277,7 @@ Verify in S3:
 ```bash
 aws s3 ls s3://$(terraform output -raw backup_bucket_name)/backups/ --recursive
 ```
+You can verify this on the Web-UI. Go for S3 and you should see a backup bucket created with other contents signifiying date
 
 ---
 
@@ -344,6 +346,7 @@ kubectl apply -f network-policies.yaml
 ```
 
 > **Important:** Do not use Calico with this setup. The cluster uses the AWS VPC CNI which manages interfaces as `eni*`. Calico creates `cali*` interfaces and conflicts with the existing CNI, requiring node replacement to recover.
+> Note that this could also be done via terraform, deployment of the addon, but due to lab constraints i went with Web-UI.
 
 **Test enforcement:**
 
@@ -460,4 +463,4 @@ terraform destroy
 - **CI/CD pipeline** — GitHub Actions to build and push the weather-app image on commit, trigger a rolling restart on the deployment
 - **Route 53 + ACM** — custom domain with HTTPS. ALB terminates TLS, pods receive plain HTTP. Requires updating Ingress annotations for port 443 and HTTP→HTTPS redirect
 - **EBS CSI addon** — enables persistent storage for Prometheus and Grafana so metrics survive pod restarts
-- **Pod Identity** — simpler alternative to IRSA, no OIDC dependency, associations visible in EKS console
+- **Pod Identity** — simpler alternative to IRSA, no OIDC dependency, associations visible in EKS console. Unable due to lab limitations
