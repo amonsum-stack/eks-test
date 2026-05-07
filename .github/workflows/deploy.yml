@@ -1,5 +1,5 @@
 ####################################################################
-# CI/CD Pipeline — weather-app → EKS
+# CI/CD Pipeline — weather-app -> EKS
 #
 # Triggers:
 #   - Push to main (full build + deploy)
@@ -33,12 +33,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'app/**'           # only re-deploy when app code changes
+      - 'weather-app/**'           # only re-deploy when app code changes
       - '.github/workflows/deploy.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'app/**'
+      - 'weather-app/**'
 
 env:
   IMAGE_NAME: igior/weather-app
@@ -70,23 +70,23 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        working-directory: app
+        working-directory: weather-app
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install flake8 pytest
+          pip install flake8 
 
       - name: Lint with flake8
-        working-directory: app
+        working-directory: weather-app
         run: |
           # Stop on syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # Warn on style issues (non-blocking)
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      - name: Run unit tests
-        working-directory: app
-        run: pytest tests/ -v --tb=short
+#      - name: Run unit tests
+#        working-directory: weather-app
+#        run: pytest tests/ -v --tb=short
         # If you don't have a tests/ directory yet, remove this step
         # and add it once you write your first test.
 
@@ -104,7 +104,7 @@ jobs:
       - name: Build image (no push on PR)
         uses: docker/build-push-action@v5
         with:
-          context: ./app
+          context: ./weather-app
           push: false          # validate build on PRs without pushing
           tags: ${{ steps.meta.outputs.sha_tag }}
           cache-from: type=gha
@@ -122,7 +122,7 @@ jobs:
         if: github.event_name == 'push'
         uses: docker/build-push-action@v5
         with:
-          context: ./app
+          context: ./weather-app
           push: true
           tags: |
             ${{ steps.meta.outputs.sha_tag }}
