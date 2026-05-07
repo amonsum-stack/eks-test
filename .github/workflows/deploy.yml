@@ -139,9 +139,6 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
-    env:
-      IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
-
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -158,8 +155,10 @@ jobs:
 
       - name: Update deployment image
         run: |
+          IMAGE_TAG="${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          echo "Deploying: ${IMAGE_TAG}"
           kubectl set image deployment/${{ env.DEPLOYMENT }} \
-            ${{ env.CONTAINER }}=${{ env.IMAGE_TAG }} \
+            ${{ env.CONTAINER }}=${IMAGE_TAG} \
             -n ${{ env.NAMESPACE }}
 
       - name: Wait for rollout to complete
