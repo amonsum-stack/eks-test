@@ -90,16 +90,16 @@ jobs:
         # If you don't have a tests/ directory yet, remove this step
         # and add it once you write your first test.
 
-      # --- Docker build (always) ---
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Generate image tag
         id: meta
         run: |
           SHA_TAG="${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo "sha_tag=${SHA_TAG}" >> "$GITHUB_OUTPUT"
-          echo "Building: ${SHA_TAG}"
+          echo "sha_tag=${SHA_TAG}"   # debug print
+
+      # --- Docker build (always) ---
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build image (no push on PR)
         uses: docker/build-push-action@v5
