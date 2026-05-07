@@ -5,8 +5,7 @@
 # Sized for a 3-node lab cluster (t3.medium nodes).
 #
 # Note: Persistence disabled — EBS CSI addon blocked by lab SCP.
-# Prometheus and Grafana use emptyDir. Data lost on pod restart
-# but metrics re-populate quickly from live scraping.
+# Prometheus and Grafana use emptyDir. Data lost on pod restart but metrics re-populate quickly from live scraping.
 #
 # What's enabled:
 #   - Prometheus      (metrics collection, no persistence)
@@ -23,12 +22,11 @@ prometheus:
   prometheusSpec:
     scrapeInterval: 30s
     evaluationInterval: 30s
-    retention: 6h          # Short retention since no persistent storage
+    retention: 6h          
 
-    # No persistence — emptyDir
+    #emptyDir
     storageSpec: {}
 
-    # Discover ServiceMonitors from all namespaces
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorSelector: {}
     serviceMonitorNamespaceSelector: {}
@@ -54,11 +52,11 @@ grafana:
   adminUser: admin
   adminPassword: admin
 
-  # No persistence — emptyDir
+  #emptyDir
   persistence:
     enabled: false
 
-  # Pre-configure Prometheus datasource
+  # Pre-configure Prometheus datasource, this collides with the HELM deployment
   # datasources:
    # datasources.yaml:
     #  apiVersion: 1

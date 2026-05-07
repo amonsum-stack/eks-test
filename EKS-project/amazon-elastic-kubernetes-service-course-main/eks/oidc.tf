@@ -1,5 +1,5 @@
 #OIDC provider for IRSA (IAM Roles for Service Accounts)
-# Used by ALB Controller, RDS, S3. Potentially used by EBS-CSI
+# Used by ALB Controller, RDS, S3. Potentially used by EBS-CSI, ESO.
 
 data "tls_certificate" "eks_oidc" {
   url = aws_eks_cluster.demo_eks.identity[0].oidc[0].issuer

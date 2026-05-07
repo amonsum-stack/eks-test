@@ -16,7 +16,7 @@ provider "aws" {
   #       "kubernetes.io/cluster/demo-eks" = "owned"
   #     }
   #   }
-}
+} #commented out due to possible conflit in EKS where it puts its own tags on resources.
 
 terraform {
   required_providers {

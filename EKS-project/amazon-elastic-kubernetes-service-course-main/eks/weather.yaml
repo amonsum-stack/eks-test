@@ -1,16 +1,13 @@
 ####################################################################
-# Belgrade Weather App — Kubernetes Manifests
-#
 # Resources:
-#   - Namespace: weather
+#   - Namespace: weather (placed for clarity, not strictly needed since it should be created eariler)
 #   - ServiceAccount: weather-fetcher (for CronJob ConfigMap write)
 #   - ServiceAccount: weather-app (for Flask pod ConfigMap read)
 #   - Role + RoleBindings: ConfigMap read/write permissions
-#   - CronJob: fetches weather every 10 minutes → writes ConfigMap
+#   - CronJob: fetches weather every 10 minutes from open meteo api -> writes ConfigMap
 #   - Deployment: Flask app serving the UI
 #   - Service: ClusterIP
 #   - Ingress: ALB internet-facing
-#
 ####################################################################
 
 ####################################################################
@@ -68,7 +65,7 @@ rules:
     verbs: ["get"]
 ---
 ####################################################################
-# RoleBinding — CronJob SA → writer role
+# RoleBinding — CronJob SA -> writer role
 ####################################################################
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -85,7 +82,7 @@ roleRef:
   name: weather-configmap-writer
 ---
 ####################################################################
-# RoleBinding — Flask SA → reader role
+# RoleBinding — Flask SA -> reader role
 ####################################################################
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -172,8 +169,7 @@ spec:
 ---
 ####################################################################
 # CronJob — hourly aggregator
-# Runs at :55 every hour, aggregates the previous hour's readings
-# from weather_readings into weather_hourly_stats.
+# Runs at :55 every hour, aggregates the previous hour's readings from weather_readings into weather_hourly_stats.
 ####################################################################
 apiVersion: batch/v1
 kind: CronJob
@@ -258,9 +254,6 @@ spec:
         app: weather-app
     spec:
       serviceAccountName: weather-app
-
-      # Spread pods across nodes — at most 1 weather-app pod per node.
-      # preferredDuring means scheduler still places pod if only 1 node available.
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

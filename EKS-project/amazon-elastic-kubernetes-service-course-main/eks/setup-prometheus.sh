@@ -2,11 +2,6 @@
 # setup-prometheus.sh
 #
 # Deploys kube-prometheus-stack via Helm into the monitoring namespace.
-#
-# Note: EBS CSI driver addon is blocked by lab SCP (iam:PassRole).
-# Prometheus and Grafana run without persistence — data is lost on
-# pod restart but fine for a lab environment.
-#
 # Prerequisites:
 #   - kubectl configured for the cluster
 #   - helm installed (helm version)
@@ -26,23 +21,14 @@ echo " Prometheus + Grafana Setup"
 echo "======================================================"
 echo ""
 
-####################################################################
-# 1. Create monitoring namespace
-####################################################################
 echo "Creating monitoring namespace..."
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-####################################################################
-# 2. Add Helm repo
-####################################################################
 echo ""
 echo "Adding prometheus-community Helm repo..."
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 
-####################################################################
-# 3. Install / upgrade kube-prometheus-stack
-####################################################################
 echo ""
 echo "Installing kube-prometheus-stack v${CHART_VERSION}..."
 helm upgrade --install "$RELEASE" \
@@ -60,9 +46,6 @@ kubectl rollout status deployment \
   -n "$NAMESPACE" \
   --timeout=120s
 
-####################################################################
-# 4. Print summary
-####################################################################
 echo ""
 echo "======================================================"
 echo " Done!"

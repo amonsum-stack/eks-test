@@ -4,38 +4,32 @@
 #
 ####################################################################
 
-# KK Playground. Cluster must be called 'demo-eks'
 variable "cluster_name" {
   type        = string
   description = "Name of the cluster"
   default     = "demo-eks"
 }
 
-# KK Playground. Cluster role must be called 'eksClusterRole'
 variable "cluster_role_name" {
   type        = string
   description = "Name of the cluster role"
   default     = "eksClusterRole"
 }
 
-# In KK playground and for some EKS labs, the role is not predefined.
 # In some other EKS labs, the service role exists already.
 # This variable is initialized as an environment variable source
-# by check-environment.sh if it is required to be "true"
 variable "use_predefined_role" {
   type        = bool
   description = "Whether to use predefined cluster service role, or create one."
   default     = false   
 }
 
-# KK Playground. Node role must be called 'eksWorkerNodeRole'
 variable "node_role_name" {
   type        = string
   description = "Name of node role"
   default     = "eksWorkerNodeRole"
 }
 
-# KK Playground. Policy role must be called 'eksPolicy'
 variable "additional_policy_name" {
     type = string
     description = "Name of IAM::Policy created for additional permissions"
@@ -85,6 +79,6 @@ variable "alert_email" {
   type        = string
   description = "Email address for all CloudWatch alarm and backup notifications"
   # Set via terraform.tfvars or environment variable:
-  #   export TF_VAR_alert_email="you@example.com"
+  # Export TF_VAR_alert_email="you@example.com"
   # Do not set a default here — forces explicit acknowledgement
 }

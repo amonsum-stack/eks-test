@@ -1,17 +1,11 @@
 ####################################################################
-#
 # SNS Topics — one per concern
 #
 # Three topics:
-#   1. eks-alarms    — EKS node CPU/status alerts
-#   2. rds-alarms    — RDS CPU/storage/status alerts
-#   3. backup-events — S3 backup completion notifications
+#   1. rds-alarms    — RDS CPU/storage/status alerts
 #
 # All subscribed to the same email address via var.alert_email.
-# Subscriptions require manual confirmation — AWS will send a
-# confirmation email to the address after terraform apply. 
-# CHECK SPAM FOLDER IF YOU DON'T SEE IT.
-#
+# Subscriptions require manual confirmation 
 ####################################################################
 
 ####################################################################
@@ -28,6 +22,7 @@
 #}
 
 # Issue with tags, probably lab environment, so ignoring for now
+# EKS alarms are on grafana/prometheus
 
 resource "aws_sns_topic" "rds_alarms" {
   name = "eks-rds-alarms"

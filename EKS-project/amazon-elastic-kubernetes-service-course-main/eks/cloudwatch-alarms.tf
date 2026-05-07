@@ -121,7 +121,6 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage_low" {
 }
 
 # High connection count — db.t3.micro max_connections ~ 60
-# Alert at 48 (80% of max) to give time to react
 resource "aws_cloudwatch_metric_alarm" "rds_connections_high" {
   alarm_name          = "rds-connections-high"
   alarm_description   = "RDS Postgres connection count above 80% of maximum (48/60)"
@@ -157,7 +156,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_instance_down" {
   period              = 60
   statistic           = "SampleCount"
   threshold           = 1
-  treat_missing_data  = "breaching" # Missing data means instance is down
+  treat_missing_data  = "breaching" # If no data, treat as down
 
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.postgres.identifier

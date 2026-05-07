@@ -1,27 +1,16 @@
 ####################################################################
-# HorizontalPodAutoscaler — Belgrade Weather App
-#
 # Scaling policy:
-#   Min replicas : 3  (one per node, always available)
-#   Max replicas : 9  (3x the node count — scheduler will stack
-#                      up to 3 pods per node under heavy load)
+#   Min replicas : 3  
+#   Max replicas : 9  
 #
 # Scale-up triggers (either condition causes a scale-up):
 #   - Average CPU    > 70%  across all pods
 #   - Average Memory > 75%  across all pods
 #
 # Scale-up/down behaviour:
-#   - Scale up   : adds up to 3 pods per 60s (fast response to spikes)
-#   - Scale down : removes 1 pod per 120s   (conservative, avoids flapping)
+#   - Scale up   : adds up to 3 pods per 60s 
+#   - Scale down : removes 1 pod per 120s   
 #   - Stabilization window (scale down): 300s — must be stable for 5 min
-#     before Kubernetes actually removes replicas
-#
-# HTTP request-based scaling:
-
-#     b) Prometheus Adapter (after Prometheus is deployed)
-#   Both are planned as part of the observability stack.
-#   CPU utilization correlates well with HTTP load for a Flask/Gunicorn
-#   app in the meantime.
 #
 # Requirements:
 #   metrics-server must be running in the cluster.
@@ -43,7 +32,7 @@ spec:
     kind: Deployment
     name: weather-app
 
-  minReplicas: 1
+  minReplicas: 3
   maxReplicas: 9
 
   metrics:

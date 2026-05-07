@@ -4,9 +4,6 @@
 # Annotated with the IRSA role ARN — this is what gives the
 # CronJob pods permission to write to S3 without any static
 # AWS credentials anywhere in the cluster.
-#
-# Replace <backup_irsa_role_arn> with the Terraform output value:
-#   terraform output -raw backup_irsa_role_arn
 ####################################################################
 
 apiVersion: v1
@@ -39,23 +36,22 @@ metadata:
   name: postgres-backup
   namespace: weather
 spec:
-  schedule: "0 2 * * 0"          # Every Sunday at 02:00 UTC
-  concurrencyPolicy: Forbid       # Don't run if previous job still running
-  successfulJobsHistoryLimit: 3   # Keep last 3 successful job records
-  failedJobsHistoryLimit: 3       # Keep last 3 failed job records
+  schedule: "0 2 * * 0"          
+  concurrencyPolicy: Forbid       
+  successfulJobsHistoryLimit: 3  
+  failedJobsHistoryLimit: 3       
   jobTemplate:
     spec:
-      backoffLimit: 2             # Retry up to 2 times on failure
+      backoffLimit: 2             
       template:
         metadata:
           labels:
             app: postgres-backup
         spec:
-          serviceAccountName: backup-job   # IRSA-annotated SA
+          serviceAccountName: backup-job   
           restartPolicy: OnFailure
           containers:
             - name: pg-backup
-              # Use an image that has both psql and aws cli
               image: postgres:16-alpine
               command:
                 - /bin/sh
@@ -93,7 +89,6 @@ spec:
                   echo "Verified backup is present in S3."
 
               env:
-                # Database credentials from existing Secret
                 - name: DB_HOST
                   valueFrom:
                     secretKeyRef:
@@ -119,14 +114,12 @@ spec:
                     secretKeyRef:
                       name: postgres-credentials
                       key: password
-                # S3 target — set from Terraform output
                 - name: BUCKET_NAME
                   value: "<backup_bucket_name>"
                 - name: AWS_ACCOUNT_ID
                   value: "<aws_account_id>"
-                # AWS region for the CLI
                 - name: AWS_DEFAULT_REGION
-                  value: "us-east-1" #this should be changer to your region if not us-east-1, maybe use a variable for this in terraform?
+                  value: "us-east-1" 
               resources:
                 requests:
                   cpu: 100m
@@ -141,7 +134,7 @@ spec:
 # Triggers the same backup logic immediately so you can verify
 # the full pipeline without waiting for Sunday.
 #
-# Deploy:   kubectl apply -f k8s/backup/backup-test-job.yaml
+# Deploy:   kubectl apply -f backup-test-job.yaml
 # Logs:     kubectl logs -n weather job/backup-test
 # Cleanup:  kubectl delete job backup-test -n weather
 ####################################################################
@@ -151,7 +144,7 @@ metadata:
   name: backup-test
   namespace: weather
 spec:
-  ttlSecondsAfterFinished: 120 # Deletes the job after 2 minutes
+  ttlSecondsAfterFinished: 120 
   template:
     metadata:
       labels:

@@ -1,4 +1,6 @@
 
+#The use_eksClusterRole module is needed only if the lab already has the role defined.
+# In other enviroments this module can be discarded.
 module "use_eksClusterRole" {
   count  = var.use_predefined_role ? 1 : 0
   source = "./modules/use-service-role"

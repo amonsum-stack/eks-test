@@ -4,11 +4,10 @@
 # One-off Job that creates the two weather tables in RDS postgres.
 # Run once after the namespace and secret are in place:
 #
-#   kubectl apply -f k8s/weather/init-db.yaml
+#   kubectl apply -f init-db.yaml
 #   kubectl logs -n weather -l job-name=weather-init-db
 #
 # Safe to re-run — uses CREATE TABLE IF NOT EXISTS.
-# Replace <YOUR_IMAGE> with your actual image before applying.
 ####################################################################
 
 apiVersion: batch/v1
@@ -19,7 +18,7 @@ metadata:
   labels:
     app: weather-init-db
 spec:
-  ttlSecondsAfterFinished: 300    # Auto-clean after 5 minutes
+  ttlSecondsAfterFinished: 300    
   template:
     metadata:
       labels:

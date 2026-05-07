@@ -9,7 +9,7 @@
 # a separate aws_s3_bucket_notification resource to keep concerns
 # separated.
 #
-# Flow:
+# How it works:
 #   CronJob completes pg_dump → s3 cp
 #     → S3 fires ObjectCreated event
 #       → SNS backup_events topic

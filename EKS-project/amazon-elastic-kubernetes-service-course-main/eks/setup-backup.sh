@@ -1,10 +1,8 @@
 #!/bin/bash
 # setup-backup.sh
 #
-# Patches k8s/backup/backup.yaml with real values from Terraform outputs,
+# Patches backup.yaml with real values from Terraform outputs,
 # then applies the ServiceAccount and CronJob to the cluster.
-#
-# Run from the eks/ directory after terraform apply.
 #
 # Usage:
 #   chmod +x setup-backup.sh

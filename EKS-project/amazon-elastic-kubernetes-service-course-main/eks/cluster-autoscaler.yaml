@@ -170,7 +170,6 @@ spec:
             - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/demo-eks
             - --balance-similar-node-groups
             - --skip-nodes-with-system-pods=false
-            # Scale-down settings — conservative for a lab
             - --scale-down-enabled=true
             - --scale-down-utilization-threshold=0.5
             - --scale-down-unneeded-time=10m

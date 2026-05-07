@@ -40,8 +40,7 @@ spec:
 # weather-app — Flask deployment
 #
 # Ingress:
-#   - Allow from VPC CIDR on port 8080 
-#   - This allow us to reach the app via ALB
+#   - Allow from VPC CIDR on port 8080, this allow us to reach the app via ALB
 #
 # Egress:
 #   - Allow to RDS private subnets on port 5432 (Postgres)

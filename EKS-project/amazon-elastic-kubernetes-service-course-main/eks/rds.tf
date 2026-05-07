@@ -10,9 +10,6 @@
 #   - Credentials stored in AWS Secrets Manager + k8s Secret
 #
 # Pods reach RDS because nodes and RDS share the same VPC.
-# No NAT Gateway needed — private subnets have no IGW route,
-# which is exactly what we want for a database.
-#
 ####################################################################
 
 ####################################################################

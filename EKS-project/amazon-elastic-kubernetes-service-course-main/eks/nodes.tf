@@ -1,20 +1,13 @@
 ####################################################################
-#
 # Creates the unmanaged node group
 #
 # Most of these resources are terraform resources converted from
 # the CloudFormation template at
 # https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2022-12-23/amazon-eks-nodegroup.yaml
-#
 ####################################################################
 
 
 # Create an SSH key pair for logging into the EC2 instances
-# Security note:
-# Generally not good practice to generate keys like this in Terraform
-# as the key material is stored in the state file.
-# Key pairs should be created externally and passed to Terraform as
-# a variable.
 resource "tls_private_key" "key_pair" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -53,10 +46,11 @@ resource "aws_iam_role" "node_instance_role" {
   path               = "/"
 }
 
+# This allows are ESO Pods to work. 
 resource "aws_iam_role_policy_attachment" "node_instance_role_secrets_manager" {
   policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
   role       = aws_iam_role.node_instance_role.name
-}
+} 
 
 resource "aws_iam_role_policy_attachment" "node_instance_role_EKSWNP" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
@@ -100,10 +94,7 @@ resource "aws_security_group" "node_security_group" {
   }
 }
 
-#
-# Now follows several rules that are applied to the node security group
-# to allow control plane to access nodes
-#
+# Now follows several rules that are applied to the node security group to allow control plane to access nodes
 
 resource "aws_vpc_security_group_ingress_rule" "node_security_group_ingress" {
   description                  = "Allow node to communicate with each other"
@@ -138,10 +129,7 @@ resource "aws_vpc_security_group_ingress_rule" "control_plane_egress_to_node_sec
   ip_protocol                  = "TCP"
 }
 
-#
-# Now follows several rules that are applied to the EKS cluster security group
-# to allow nodes to access control plane
-#
+# Now follows several rules that are applied to the EKS cluster security group to allow nodes to access control plane
 
 resource "aws_vpc_security_group_ingress_rule" "cluster_control_plane_security_group_ingress" {
   description                  = "Allow pods to communicate with the cluster API Server"
@@ -261,6 +249,11 @@ resource "aws_launch_template" "node_launch_template" {
     }
   }
 
+# Script is present on linux images optimized for EKS.
+# Configures kubelet with endpoint and certificates
+# Authenticates node to the control plane
+# Starts the kubelet
+# Register the node to the cluster
   user_data = base64encode(<<EOF
     #!/bin/bash
     set -o xtrace
