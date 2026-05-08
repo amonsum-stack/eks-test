@@ -404,6 +404,13 @@ Check for violations against existing workloads:
 kubectl get policyreport -A
 ```
 
+### 13. CI/CD Pipline
+
+CI/CD pipline has been added in the .github/workflows directory deployment.yml which is being triggered any time that a change is being implemented in the weather-app. Github actions will check the changes, updated the image, push the image to Dockerhub and after that deploy the new image on our EKS cluster. Note that the cluster needs to be up and running in order to get the changes from Github actions.
+Also keep in mind that credentials in the github actions need to be applied accordingly to your deployment. This inludes AWS and Docker credentials.
+
+
+
 **Policies applied:**
 
 | Policy | Mode | What it enforces |
@@ -460,7 +467,6 @@ terraform destroy
 
 ## Things to Add (Future Work)
 
-- **CI/CD pipeline** — GitHub Actions to build and push the weather-app image on commit, trigger a rolling restart on the deployment
 - **Route 53 + ACM** — custom domain with HTTPS. ALB terminates TLS, pods receive plain HTTP. Requires updating Ingress annotations for port 443 and HTTP→HTTPS redirect
 - **EBS CSI addon** — enables persistent storage for Prometheus and Grafana so metrics survive pod restarts
 - **Pod Identity** — simpler alternative to IRSA, no OIDC dependency, associations visible in EKS console. Unable due to lab limitations
