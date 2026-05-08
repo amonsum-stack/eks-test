@@ -409,6 +409,18 @@ kubectl get policyreport -A
 CI/CD pipline has been added in the .github/workflows directory deployment.yml which is being triggered any time that a change is being implemented in the weather-app. Github actions will check the changes, updated the image, push the image to Dockerhub and after that deploy the new image on our EKS cluster. Note that the cluster needs to be up and running in order to get the changes from Github actions.
 Also keep in mind that credentials in the github actions need to be applied accordingly to your deployment. This inludes AWS and Docker credentials.
 
+For Git hub actions to work you need to create user and access key so that the aws-auth.yaml configmap can pick them up.
+```bash
+aws iam create-user --user-name github-actions-deploy
+aws iam create-access-key --user-name github-actions-deploy
+
+aws iam attach-user-policy \
+  --user-name github-actions-deploy \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+
+```
+# Or you can use your current access key and secret access key and place them in the git hub actions secrets. In that case you dont need to change the config map.
+# Lab had restrictions on this so i used the existing key instead of making new ones.
 
 
 **Policies applied:**

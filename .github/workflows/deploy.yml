@@ -2,12 +2,12 @@
 # CI/CD Pipeline — weather-app -> EKS
 #
 # Triggers:
-#   - Push to main (full build + deploy)
-#   - Pull request to main (build + test only, no deploy)
+#   - Push to main (full build and deploy)
+#   - Pull request to main (build and test only, no deploy)
 #
 # Secrets required (set in GitHub repo Settings → Secrets):
 #   DOCKERHUB_USERNAME   — Docker Hub login
-#   DOCKERHUB_TOKEN      — Docker Hub access token (not password)
+#   DOCKERHUB_TOKEN      — Docker Hub access token 
 #   AWS_ACCESS_KEY_ID    — IAM user with EKS describe + kubectl access
 #   AWS_SECRET_ACCESS_KEY
 #
@@ -74,7 +74,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install flake8 
+          pip install flake8 pytest
 
       - name: Lint with flake8
         working-directory: weather-app
@@ -84,9 +84,9 @@ jobs:
           # Warn on style issues (non-blocking)
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-#      - name: Run unit tests
-#        working-directory: weather-app
-#        run: pytest tests/ -v --tb=short
+      - name: Run unit tests
+        working-directory: weather-app
+        run: pytest tests/ -v --tb=short
         # If you don't have a tests/ directory yet, remove this step
         # and add it once you write your first test.
 
