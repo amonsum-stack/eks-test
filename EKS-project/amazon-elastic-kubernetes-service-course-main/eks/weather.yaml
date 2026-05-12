@@ -125,6 +125,9 @@ spec:
 
           containers:
             - name: fetcher
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
               image: igior/weather-app:1.3
               command: ["python", "weather-fetcher.py"]
 
@@ -195,6 +198,9 @@ spec:
 
           containers:
             - name: aggregator
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
               image: igior/weather-app:1.3
               command: ["python", "weather-aggregator.py"]
 
@@ -266,6 +272,9 @@ spec:
 
       containers:
         - name: weather-app
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
           image: igior/weather-app:1.3
           ports:
             - containerPort: 8080

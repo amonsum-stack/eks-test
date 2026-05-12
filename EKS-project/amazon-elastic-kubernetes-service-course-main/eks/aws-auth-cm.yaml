@@ -10,8 +10,3 @@ data:
       groups:
         - system:bootstrappers
         - system:nodes
-  mapUsers: |
-    - userarn: arn:aws:iam::<account-id>:user/github-actions-deploy
-      username: github-actions-deploy
-      groups:
-        - system:masters

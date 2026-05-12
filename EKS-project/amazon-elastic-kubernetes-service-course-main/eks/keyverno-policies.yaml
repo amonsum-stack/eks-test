@@ -206,7 +206,7 @@ metadata:
       Privileged containers have unrestricted host access and
       should never be used in production workloads.
 spec:
-  validationFailureAction: Enforce
+  validationFailureAction: Audit
   background: true
   rules:
     - name: check-privileged

@@ -199,6 +199,23 @@ kubectl get ingress weather-app -n weather
 ```
 You can also do this from the Web-UI. Go to ec2>loadbalancers in the main page you will see ALB URL copy that in the browser.
 Dont forget to add http://ALB-URL
+
+---
+
+#### Enable VPC CNI prefix delegation (recommended before applying HPA)
+
+By default t3.medium nodes can only run ~17 pods due to ENI IP limits. Prefix delegation increases this to ~110 pods per node by assigning a /28 prefix per ENI slot instead of individual IPs. This is usually recomended regardeless the node size.
+
+```bash
+kubectl set env daemonset aws-node \
+  -n kube-system \
+  ENABLE_PREFIX_DELEGATION=true
+
+kubectl rollout restart daemonset aws-node -n kube-system
+
+kubectl get daemonset aws-node -n kube-system -o yaml | grep ENABLE_PREFIX_DELEGATION
+```
+
 ---
 
 ### 6. Enable Horizontal Pod Autoscaling
@@ -419,6 +436,14 @@ aws iam attach-user-policy \
   --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
 
 ```
+
+Add this to aws-auth-cm.yaml below the instance role
+  mapUsers: |
+    - userarn: arn:aws:iam::<account-id>:user/github-actions-deploy
+      username: github-actions-deploy
+      groups:
+        - system:masters
+
 # Or you can use your current access key and secret access key and place them in the git hub actions secrets. In that case you dont need to change the config map.
 # Lab had restrictions on this so i used the existing key instead of making new ones.
 
