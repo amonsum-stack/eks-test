@@ -1,18 +1,16 @@
 variable "db_username" {}
-
 variable "db_name" {}
-
 variable "db_engine" {}
-
 variable "db_instance_class" {}
+variable "private_subnet_ids" {}
+variable "rds_security_group_id" {}
 
 
 # DB Subnet Group — RDS requires subnets in at least 2 AZs
-
 resource "aws_db_subnet_group" "postgres" {
   name        = "postgres-subnet-group"
   description = "Private subnets for RDS Postgres"
-  subnet_ids  = aws_subnet.private[*].id
+  subnet_ids  = var.private_subnet_ids
 
   tags = {
     Name = "postgres-subnet-group"
@@ -21,8 +19,6 @@ resource "aws_db_subnet_group" "postgres" {
 
 
 # Random password for the RDS master user
-
-
 resource "random_password" "db_password" {
   length           = 32
   special          = true
@@ -31,7 +27,6 @@ resource "random_password" "db_password" {
 
 
 # Store credentials in AWS Secrets Manager
-
 resource "aws_secretsmanager_secret" "db_credentials" {
   name                    = "rds/postgres/credentials"
   description             = "RDS Postgres credentials"
@@ -73,7 +68,7 @@ resource "aws_db_instance" "postgres" {
   password = random_password.db_password.result
 
   db_subnet_group_name   = aws_db_subnet_group.postgres.name
-  vpc_security_group_ids = [aws_security_group.rds.id]
+  vpc_security_group_ids = [var.rds_security_group_id]
 
   # No public access — only reachable from within the VPC
   publicly_accessible = false
@@ -92,8 +87,6 @@ resource "aws_db_instance" "postgres" {
   }
 }
 
-#Outputs
-
 output "rds_endpoint" {
   description = "RDS Postgres endpoint (host:port)"
   value       = "${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}"
@@ -102,4 +95,9 @@ output "rds_endpoint" {
 output "rds_secret_arn" {
   description = "ARN of the Secrets Manager secret containing DB credentials"
   value       = aws_secretsmanager_secret.db_credentials.arn
+}
+
+output "db_instance_identifier" {
+  description = "RDS instance identifier"
+  value       = aws_db_instance.postgres.identifier
 }

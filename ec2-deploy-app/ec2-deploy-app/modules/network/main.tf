@@ -1,6 +1,8 @@
 variable "vpc_cidr" {}
 variable "vpc_name" {}
-variable "cidr_subnet_public" {}
+variable "cidr_subnet_public" {
+    type = list(string)
+}
 variable "cidr_subnet_private" {}
 variable "us_availability_zone" {}
 
@@ -9,7 +11,7 @@ output "vpc_id" {
 }
 
 output "public_subnet_id" {
-  value = aws_subnet.public.id
+  value = aws_subnet.public[*].id
 }
 
 output "private_subnet_id" {
@@ -28,25 +30,26 @@ resource "aws_vpc" "main" {
 
 # Create a public subnet for app
 resource "aws_subnet" "public" {
+  count             = length(var.cidr_subnet_public)
   vpc_id = aws_vpc.main.id
-  cidr_block = var.cidr_subnet_public
-  availability_zone = var.us_availability_zone[0]
+  cidr_block = var.cidr_subnet_public[count.index]
+  availability_zone = var.us_availability_zone[count.index]
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.vpc_name}-public-subnet"
+    Name = "${var.vpc_name}-public-subnet-${count.index + 1}"
   }
 }
 
 # Create a private subnet for RDS
 resource "aws_subnet" "private" {
-  count = 3
+  count  = length(var.cidr_subnet_private)
   vpc_id = aws_vpc.main.id
   cidr_block = var.cidr_subnet_private[count.index]
   availability_zone = var.us_availability_zone[count.index]
 
   tags = {
-    Name = "${var.vpc_name}-private-subnet"
+    Name = "${var.vpc_name}-private-subnet-${count.index + 1}"
   }
 }
 
@@ -64,7 +67,7 @@ resource "aws_internet_gateway" "main" {
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
   route {
-    cidr_block = "0.0.0/0"
+    cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.main.id
   }
 
@@ -75,7 +78,8 @@ resource "aws_route_table" "public" {
 
 # Associate public subnet with route table
 resource "aws_route_table_association" "public" {
-  subnet_id = aws_subnet.public.id
+  count          = length(var.cidr_subnet_public)
+  subnet_id = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
 
@@ -90,10 +94,10 @@ resource "aws_route_table" "private" {
 
 # Associate private subnet with route table
 resource "aws_route_table_association" "private" {
-  count = 3
+  count = length(var.cidr_subnet_private)
   subnet_id =  aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
-} # proveri kako resursi iz public mogu da komuniciraju sa bazom u private subnetu, da li treba da se doda neka ruta
+} 
 
 
 

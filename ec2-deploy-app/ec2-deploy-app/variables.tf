@@ -25,7 +25,7 @@ variable "vpc_name" {
 
 variable "cidr_subnet_public" {
   description = "The CIDR block for the public subnet"
-  type        = string
+  type        = list(string)
 }
 
 variable "cidr_subnet_private" {
@@ -48,20 +48,12 @@ variable "ec2_security_group_description" {
   type        = string
 }
 
-variable "ami_id" {
-  description = "The AMI ID for the EC2 instances"
-  type        = string
-}
 
 variable "instance_type" {
   description = "The instance type for the EC2 instances"
   type        = string
 }
 
-variable "key_name" {
-  description = "The name of the SSH key pair"
-  type        = string
-}
 
 variable "lb_name" {
   description = "The name of the load balancer"

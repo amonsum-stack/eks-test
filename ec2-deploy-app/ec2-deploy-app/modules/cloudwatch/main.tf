@@ -1,5 +1,7 @@
+variable "db_instance_identifier" {}
+variable "sns_topic_arn" {}
 
-# RDS Alarms
+
 
 # High CPU on RDS instance
 resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
@@ -15,11 +17,11 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    DBInstanceIdentifier = aws_db_instance.postgres.identifier
+    DBInstanceIdentifier = var.db_instance_identifier
   }
 
-  alarm_actions = [aws_sns_topic.rds_alarms.arn]
-  ok_actions    = [aws_sns_topic.rds_alarms.arn]
+  alarm_actions = [var.sns_topic_arn]
+  ok_actions    = [var.sns_topic_arn]
 
   tags = {
     Name = "rds-cpu-high"
@@ -40,11 +42,11 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage_low" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    DBInstanceIdentifier = aws_db_instance.postgres.identifier
+    DBInstanceIdentifier = var.db_instance_identifier
   }
 
-  alarm_actions = [aws_sns_topic.rds_alarms.arn]
-  ok_actions    = [aws_sns_topic.rds_alarms.arn]
+  alarm_actions = [var.sns_topic_arn]
+  ok_actions    = [var.sns_topic_arn]
 
   tags = {
     Name = "rds-storage-low"
@@ -65,11 +67,11 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections_high" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    DBInstanceIdentifier = aws_db_instance.postgres.identifier
+    DBInstanceIdentifier = var.db_instance_identifier
   }
 
-  alarm_actions = [aws_sns_topic.rds_alarms.arn]
-  ok_actions    = [aws_sns_topic.rds_alarms.arn]
+  alarm_actions = [var.sns_topic_arn]
+  ok_actions    = [var.sns_topic_arn]
 
   tags = {
     Name = "rds-connections-high"
@@ -90,11 +92,11 @@ resource "aws_cloudwatch_metric_alarm" "rds_instance_down" {
   treat_missing_data  = "breaching" # If no data, treat as down
 
   dimensions = {
-    DBInstanceIdentifier = aws_db_instance.postgres.identifier
+    DBInstanceIdentifier = var.db_instance_identifier
   }
 
-  alarm_actions = [aws_sns_topic.rds_alarms.arn]
-  ok_actions    = [aws_sns_topic.rds_alarms.arn]
+  alarm_actions = [var.sns_topic_arn]
+  ok_actions    = [var.sns_topic_arn]
 
   tags = {
     Name = "rds-instance-down"
