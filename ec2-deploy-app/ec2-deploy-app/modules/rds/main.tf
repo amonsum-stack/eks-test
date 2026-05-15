@@ -6,7 +6,7 @@ variable "private_subnet_ids" {}
 variable "rds_security_group_id" {}
 
 
-# DB Subnet Group — RDS requires subnets in at least 2 AZs
+# DB Subnet Group 
 resource "aws_db_subnet_group" "postgres" {
   name        = "postgres-subnet-group"
   description = "Private subnets for RDS Postgres"
@@ -85,16 +85,6 @@ resource "aws_db_instance" "postgres" {
   tags = {
     Name = "rds-${var.db_name}-postgres"
   }
-}
-
-output "rds_endpoint" {
-  description = "RDS Postgres endpoint (host:port)"
-  value       = "${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}"
-}
-
-output "rds_secret_arn" {
-  description = "ARN of the Secrets Manager secret containing DB credentials"
-  value       = aws_secretsmanager_secret.db_credentials.arn
 }
 
 output "db_instance_identifier" {

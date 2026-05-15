@@ -1,21 +1,14 @@
-####################################################################
-#
 # S3 Event Notification — Backup Completion
 #
-# Fires an SNS notification immediately when a new backup object
-# is created under the backups/ prefix in the db_backups bucket.
+# Fires an SNS notification immediately when a new backup object is created under the backups/ prefix in the db_backups bucket.
 #
-# This is added to the existing s3-backup.tf bucket resource via
-# a separate aws_s3_bucket_notification resource to keep concerns
-# separated.
+# This is added to the existing s3-backup.tf bucket resource via a separate aws_s3_bucket_notification resource to keep concerns separated.
 #
 # How it works:
-#   CronJob completes pg_dump → s3 cp
-#     → S3 fires ObjectCreated event
-#       → SNS backup_events topic
-#         → Email to var.alert_email
-#
-####################################################################
+#   CronJob completes pg_dump -> s3 cp
+#     -> S3 fires ObjectCreated event
+#       -> SNS backup_events topic
+#         -> Email to var.alert_email
 
 resource "aws_s3_bucket_notification" "backup_notification" {
   bucket = aws_s3_bucket.db_backups.id

@@ -1,5 +1,3 @@
-####################################################################
-#
 # S3 Backup Bucket + IRSA for pg_dump CronJob
 #
 # This file sets up:
@@ -12,12 +10,8 @@
 #   5. Back dont need public access 
 #   6. IAM policy scoped to PutObject/ListBucket on this bucket only
 #   7. IRSA role trusted by the backup-job ServiceAccount
-#
-####################################################################
 
-####################################################################
 # S3 Bucket
-####################################################################
 
 resource "aws_s3_bucket" "db_backups" {
   bucket        = "${var.cluster_name}-db-backups-${data.aws_caller_identity.current.account_id}"
@@ -85,12 +79,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "db_backups" {
   }
 }
 
-####################################################################
 # IAM Policy — scoped to this bucket only
 # Only allows what the backup CronJob actually needs:
-#   - s3:PutObject  → upload the backup file
-#   - s3:ListBucket → check existing backups / verify upload
-####################################################################
+#   - s3:PutObject  -> upload the backup file
+#   - s3:ListBucket -> check existing backups / verify upload
 
 data "aws_caller_identity" "current" {}
 
@@ -125,10 +117,7 @@ resource "aws_iam_policy" "backup_s3_policy" {
   })
 }
 
-####################################################################
-# IRSA Role — goes to backup-job ServiceAccount in the weather namespace
-####################################################################
- 
+# IRSA Role — goes to backup-job ServiceAccount in the weather namespace 
 
 data "aws_iam_policy_document" "backup_assume_role" {
   statement {
@@ -168,9 +157,7 @@ resource "aws_iam_role_policy_attachment" "backup_irsa_policy" {
   role       = aws_iam_role.backup_irsa.name
 }
 
-####################################################################
 # Outputs
-####################################################################
 
 output "backup_bucket_name" {
   description = "S3 bucket name for database backups"

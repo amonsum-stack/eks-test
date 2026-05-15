@@ -1,4 +1,3 @@
-####################################################################
 # Scaling policy:
 #   Min replicas : 3  
 #   Max replicas : 9  
@@ -17,7 +16,6 @@
 #   Check: kubectl top pods -n weather
 #   Install if missing:
 #     kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-####################################################################
 
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler

@@ -1,7 +1,6 @@
-####################################################################
 # 1. Require resource limits on all containers
 # Containers without limits can consume all node resources and starve other pods. 
-####################################################################
+
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -46,15 +45,11 @@ spec:
                     memory: "?*"
                     cpu: "?*"
 ---
-####################################################################
 # 2. Disallow containers running as root
-#
-# Running as root inside a container is a security risk —
-# if the container is compromised, the attacker has root on
+# Running as root inside a container is a security risk — if the container is compromised, the attacker has root on
 # the host if they can escape the container runtime.
-# Applies in Audit mode first so you can see what would fail
-# before enforcing.
-####################################################################
+# Applies in Audit mode first so you can see what would fail before enforcing.
+
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -85,10 +80,10 @@ spec:
                 securityContext:
                   runAsNonRoot: true
 ---
-####################################################################
+
 # 3. Require specific labels on all pods
 # I've placed app here since it goes with my deployment but it can be changed accordigly.
-####################################################################
+
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -117,11 +112,10 @@ spec:
             labels:
               app: "?*"
 ---
-####################################################################
+
 # 4. Disallow latest image tag
-#
 # Using :latest means you can't tell what code is actually running.
-####################################################################
+
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -152,12 +146,10 @@ spec:
               - name: "*"
                 image: "!*:latest"
 ---
-####################################################################
+
 # 5. Require readiness probes on Deployments
-#
-# Without a readiness probe, Kubernetes sends traffic to a pod
-# the moment it starts — before the app is actually ready.
-####################################################################
+# Without a readiness probe, Kubernetes sends traffic to a pod the moment it starts — before the app is actually ready.
+
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -190,12 +182,10 @@ spec:
                     readinessProbe:
                       (httpGet | tcpSocket | exec): "*"
 ---
-####################################################################
+
 # 6. Block privileged containers
-#
-# Privileged containers have full access to the host — effectively
-# root on the node. 
-####################################################################
+# Privileged containers have full access to the host — effectively root on the node. 
+
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:

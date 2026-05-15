@@ -1,9 +1,5 @@
-####################################################################
-# prometheus-values.yaml
-#
 # Helm values for kube-prometheus-stack.
 # Sized for a 3-node lab cluster (t3.medium nodes).
-#
 # Note: Persistence disabled — EBS CSI addon blocked by lab SCP.
 # Prometheus and Grafana use emptyDir. Data lost on pod restart but metrics re-populate quickly from live scraping.
 #
@@ -13,11 +9,9 @@
 #   - Alertmanager    (alert routing)
 #   - Node Exporter   (per-node metrics)
 #   - kube-state-metrics (K8s object metrics)
-####################################################################
 
-####################################################################
 # Prometheus
-####################################################################
+
 prometheus:
   prometheusSpec:
     scrapeInterval: 30s
@@ -43,9 +37,8 @@ prometheus:
         cpu: 500m
         memory: 1Gi
 
-####################################################################
 # Grafana
-####################################################################
+
 grafana:
   enabled: true
 
@@ -100,11 +93,22 @@ grafana:
     analytics:
       reporting_enabled: false
 
-####################################################################
 # Alertmanager
-####################################################################
+
 alertmanager:
   enabled: true
+#  config:
+#    global:
+#      smtp_smarthost: 'smtp.gmail.com:587'
+#      smtp_from: 'from-where-to-send-notifications@example.com'
+#      smtp_auth_username: 'from-where-to-send-notifications@example.com'
+#      smtp_auth_password: 'password-for-smtp-email-account-generated-in-google-account-settings'
+#    route:
+#      receiver: email
+#    receivers:
+#      - name: email
+#        email_configs:
+#          - to: 'where-to-send-notifications@example.com'
 
   alertmanagerSpec:
     storage: {}
@@ -117,9 +121,8 @@ alertmanager:
         cpu: 100m
         memory: 128Mi
 
-####################################################################
 # Node Exporter
-####################################################################
+
 nodeExporter:
   enabled: true
 
@@ -132,9 +135,8 @@ prometheus-node-exporter:
       cpu: 100m
       memory: 64Mi
 
-####################################################################
 # kube-state-metrics
-####################################################################
+
 kubeStateMetrics:
   enabled: true
 
@@ -147,9 +149,8 @@ kube-state-metrics:
       cpu: 100m
       memory: 128Mi
 
-####################################################################
 # Disable — not accessible in managed EKS
-####################################################################
+
 kubeEtcd:
   enabled: false
 

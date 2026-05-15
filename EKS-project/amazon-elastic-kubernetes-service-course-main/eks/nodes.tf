@@ -1,6 +1,5 @@
 ####################################################################
 # Creates the unmanaged node group
-#
 # Most of these resources are terraform resources converted from
 # the CloudFormation template at
 # https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2022-12-23/amazon-eks-nodegroup.yaml
@@ -46,7 +45,7 @@ resource "aws_iam_role" "node_instance_role" {
   path               = "/"
 }
 
-# This allows are ESO Pods to work. 
+# This allows ESO Pods to work. 
 resource "aws_iam_role_policy_attachment" "node_instance_role_secrets_manager" {
   policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
   role       = aws_iam_role.node_instance_role.name

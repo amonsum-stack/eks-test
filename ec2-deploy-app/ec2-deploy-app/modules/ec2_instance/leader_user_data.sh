@@ -14,6 +14,56 @@ docker run -d \
   -p 8080:8080 \
   igior/weather-app:latest
 
+# CloudWatch Agent 
+
+dnf install -y amazon-cloudwatch-agent
+
+# Agent config — tails all three log files and ships to CloudWatch
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'EOF'
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/weather-fetcher.log",
+            "log_group_name": "/weather-app/fetcher",
+            "log_stream_name": "{instance_id}",
+            "timestamp_format": "%Y-%m-%d %H:%M:%S",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/weather-aggregator.log",
+            "log_group_name": "/weather-app/aggregator",
+            "log_stream_name": "{instance_id}",
+            "timestamp_format": "%Y-%m-%d %H:%M:%S",
+            "timezone": "UTC"
+          },
+          {
+            "file_path": "/var/log/weather-app.log",
+            "log_group_name": "/weather-app/app",
+            "log_stream_name": "{instance_id}",
+            "timestamp_format": "%Y-%m-%d %H:%M:%S",
+            "timezone": "UTC"
+          }
+        ]
+      }
+    }
+  }
+}
+EOF
+
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config \
+  -m ec2 \
+  -s \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+systemctl enable amazon-cloudwatch-agent
+systemctl start amazon-cloudwatch-agent
+
+# RDS Secret 
+
 # Retry fetching secret up to 20 times with 30s delay
 for i in {1..20}; do
   SECRET=$(aws secretsmanager get-secret-value \
@@ -43,6 +93,8 @@ DB_USER=$(echo $SECRET | python3 -c "import sys,json; print(json.load(sys.stdin)
 DB_PASS=$(echo $SECRET | python3 -c "import sys,json,base64; print(base64.b64encode(json.load(sys.stdin)['password'].encode()).decode())")
 
 echo "DB_HOST=$DB_HOST DB_PORT=$DB_PORT DB_NAME=$DB_NAME"
+
+# DB Schema 
 
 docker run --rm \
   -e DB_HOST=$DB_HOST \
@@ -94,6 +146,8 @@ conn.close()
 print('Tables created successfully')
 "
 
+# Cron Jobs 
+
 mkdir -p /etc/cron.d
 
 cat > /etc/cron.d/weather-fetcher << CRON
@@ -106,5 +160,10 @@ CRON
 
 chmod 644 /etc/cron.d/weather-fetcher
 chmod 644 /etc/cron.d/weather-aggregator
+
+# Docker app logs -> file (for CloudWatch agent to tail) 
+
+# Redirect weather-app container logs to file so CloudWatch agent can ship them
+nohup bash -c 'docker logs -f weather-app >> /var/log/weather-app.log 2>&1' &
 
 echo "Leader setup complete"

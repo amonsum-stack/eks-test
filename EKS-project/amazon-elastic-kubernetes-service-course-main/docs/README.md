@@ -197,7 +197,7 @@ Get the ALB URL and test (allow 60–90 seconds for ALB provisioning):
 ```bash
 kubectl get ingress weather-app -n weather
 ```
-You can also do this from the Web-UI. Go to ec2>loadbalancers in the main page you will see ALB URL copy that in the browser.
+You can also do this from the Web-UI. Go to ec2 > loadbalancers in the main page you will see ALB URL copy that in the browser.
 Dont forget to add http://ALB-URL
 
 ---
@@ -338,7 +338,7 @@ aws cloudwatch describe-alarms \
 
 ### 11. Apply Network Policies
 
-Enable the VPC CNI network policy enforcement first. Go to EKS → Clusters → demo-eks → Add-ons → vpc-cni → Edit configuration and set:
+Enable the VPC CNI network policy enforcement first. Go to EKS -> Clusters -> demo-eks -> Add-ons -> vpc-cni -> Edit configuration and set:
 
 ```json
 {"enableNetworkPolicy": "true"}
@@ -375,7 +375,7 @@ kubectl run test-pod \
   --labels="app=test-pod" \
   --rm -it --restart=Never \
   --command -- sh
-# Inside: curl --max-time 5 https://google.com  →  should time out
+# Inside pod use: curl --max-time 5 https://google.com  ->  should time out
 
 # Weather-app — should succeed (egress 443 explicitly allowed)
 kubectl exec -n weather \
@@ -420,13 +420,16 @@ Check for violations against existing workloads:
 ```bash
 kubectl get policyreport -A
 ```
+### 13. CI/CD Pipeline
 
-### 13. CI/CD Pipline
+A CI/CD pipeline has been added in the `.github/workflows/deploy.yml` which triggers any time a change is pushed to the `weather-app` directory on `main`. GitHub Actions will lint and test the code, build and push the image to Docker Hub, then roll it out to the EKS cluster. Note that the cluster needs to be up and running for the deploy step to succeed.
 
-CI/CD pipline has been added in the .github/workflows directory deployment.yml which is being triggered any time that a change is being implemented in the weather-app. Github actions will check the changes, updated the image, push the image to Dockerhub and after that deploy the new image on our EKS cluster. Note that the cluster needs to be up and running in order to get the changes from Github actions.
-Also keep in mind that credentials in the github actions need to be applied accordingly to your deployment. This inludes AWS and Docker credentials.
+**Image tagging:** The pipeline tags each image twice — once with the Git SHA (used for deployment) and once as `:latest` (for Docker Hub convenience). Kyverno's `disallow-latest-tag` policy blocks `:latest` from being admitted to the cluster, so only the pinned SHA tag ever reaches EKS. This is intentional. The pipeline works, but if someone would get the image separetly and try to run it, policies would block it.
 
-For Git hub actions to work you need to create user and access key so that the aws-auth.yaml configmap can pick them up.
+Keep in mind that credentials in GitHub Actions need to be set according to your deployment. This includes AWS and Docker credentials (set in repo Settings -> Secrets).
+
+**Option A — Create a dedicated IAM user for GitHub Actions:**
+
 ```bash
 aws iam create-user --user-name github-actions-deploy
 aws iam create-access-key --user-name github-actions-deploy
@@ -434,21 +437,23 @@ aws iam create-access-key --user-name github-actions-deploy
 aws iam attach-user-policy \
   --user-name github-actions-deploy \
   --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-
 ```
 
-Add this to aws-auth-cm.yaml below the instance role
-  mapUsers: |
-    - userarn: arn:aws:iam::<account-id>:user/github-actions-deploy
-      username: github-actions-deploy
-      groups:
-        - system:masters
+Then add the user to `aws-auth-cm.yaml` below the instance role entry:
 
-# Or you can use your current access key and secret access key and place them in the git hub actions secrets. In that case you dont need to change the config map.
-# Lab had restrictions on this so i used the existing key instead of making new ones.
+```yaml
+mapUsers: |
+  - userarn: arn:aws:iam::<account-id>:user/github-actions-deploy
+    username: github-actions-deploy
+    groups:
+      - system:masters
+```
 
+**Option B — Reuse your existing AWS access key.** Place your current `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` directly in GitHub Secrets. In this case no `aws-auth` changes are needed since your user is already trusted.
 
-**Policies applied:**
+> The lab environment had restrictions on creating new IAM users, so Option B was used here.
+
+**Kyverno Policies applied:**
 
 | Policy | Mode | What it enforces |
 |--------|------|-----------------|

@@ -24,12 +24,12 @@ variable "vpc_name" {
 }
 
 variable "cidr_subnet_public" {
-  description = "The CIDR block for the public subnet"
+  description = "The CIDR blocks for the public subnets (LB + bastion)"
   type        = list(string)
 }
 
 variable "cidr_subnet_private" {
-  description = "The CIDR blocks for the private subnets"
+  description = "The CIDR blocks for the private subnets (EC2 app instances + RDS)"
   type        = list(string)
 }
 
@@ -48,12 +48,10 @@ variable "ec2_security_group_description" {
   type        = string
 }
 
-
 variable "instance_type" {
-  description = "The instance type for the EC2 instances"
+  description = "The instance type for the EC2 app instances"
   type        = string
 }
-
 
 variable "lb_name" {
   description = "The name of the load balancer"
@@ -102,5 +100,5 @@ variable "db_instance_class" {
 
 variable "alert_email" {
   type        = string
-  description = "Email address for RDS alerts"  
+  description = "Email address for RDS CloudWatch alerts"
 }

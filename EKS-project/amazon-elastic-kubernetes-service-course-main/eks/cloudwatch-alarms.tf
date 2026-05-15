@@ -65,10 +65,9 @@ resource "aws_cloudwatch_metric_alarm" "eks_node_status_check" {
   }
 }
 */
-# node alarms are disabled since we are using prometheus and grafana for monitoring.
-####################################################################
+# Node alarms are disabled since we are using prometheus and grafana for monitoring.
+
 # RDS Alarms
-####################################################################
 
 # High CPU on RDS instance
 resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {

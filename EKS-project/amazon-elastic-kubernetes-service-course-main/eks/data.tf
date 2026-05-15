@@ -1,9 +1,3 @@
-###############################################################
-#
-# This file contains configuration for all data source queries
-#
-###############################################################
-
 # Get the default VPC details
 data "aws_vpc" "default_vpc" {
   default = true
@@ -12,6 +6,7 @@ data "aws_vpc" "default_vpc" {
 # Get Public IP of your broadband account. This allows us to lock down SSH access
 # into the environment from anyone other than yourself, by inserting your public
 # IP to a security group ingress rule.
+# probalby not needed
 data "http" "cloudshell_ip" {
   url = "https://checkip.amazonaws.com/"
 }

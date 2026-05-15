@@ -1,5 +1,5 @@
 # This module is conditionally invoked to create the EKS cluster service role
-# if it is not already present. In some EKS course labs, it is present.
+# if it is not already present.
 
 variable "cluster_role_name" {
   type        = string
@@ -46,6 +46,7 @@ resource "aws_iam_role_policy_attachment" "eksClusterRole_additional_policies" {
 
 # Optionally, enable Security Groups for Pods
 # Reference: https://docs.aws.amazon.com/eks/latest/userguide/security-groups-for-pods.html
+# In this project security for pods is done via network policies 
 resource "aws_iam_role_policy_attachment" "eksClusterRole_AmazonEKSVPCResourceController" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
   role       = aws_iam_role.eksClusterRole.name

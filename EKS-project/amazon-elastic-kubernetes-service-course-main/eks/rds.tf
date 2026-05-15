@@ -1,5 +1,3 @@
-####################################################################
-#
 # RDS Postgres - Private Subnet Deployment
 #
 # Architecture:
@@ -10,11 +8,8 @@
 #   - Credentials stored in AWS Secrets Manager + k8s Secret
 #
 # Pods reach RDS because nodes and RDS share the same VPC.
-####################################################################
 
-####################################################################
 # Private Subnets — one per AZ, no route to internet
-####################################################################
 
 resource "aws_subnet" "private" {
   count             = 3
@@ -22,7 +17,6 @@ resource "aws_subnet" "private" {
   cidr_block        = cidrsubnet(data.aws_vpc.default_vpc.cidr_block, 4, count.index + 10)
   availability_zone = "${var.aws_region}${["a", "b", "c"][count.index]}"
 
-  # No map_public_ip_on_launch — these are private
   tags = {
     Name = "eks-private-${["a", "b", "c"][count.index]}"
     "kubernetes.io/role/internal-elb" = "1"
@@ -43,9 +37,7 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private.id
 }
 
-####################################################################
 # DB Subnet Group — RDS requires subnets in at least 2 AZs
-####################################################################
 
 resource "aws_db_subnet_group" "postgres" {
   name        = "eks-postgres-subnet-group"
@@ -57,9 +49,7 @@ resource "aws_db_subnet_group" "postgres" {
   }
 }
 
-####################################################################
 # Security Group — only allow inbound 5432 from node security group
-####################################################################
 
 resource "aws_security_group" "rds" {
   name        = "eks-rds-sg"
@@ -87,9 +77,7 @@ resource "aws_vpc_security_group_egress_rule" "rds_egress" {
   ip_protocol       = "-1"
 }
 
-####################################################################
 # Random password for the RDS master user
-####################################################################
 
 resource "random_password" "db_password" {
   length           = 32
@@ -97,9 +85,7 @@ resource "random_password" "db_password" {
   override_special = "!#$%^&*()-_=+[]{}|;:,.<>?"
 }
 
-####################################################################
 # Store credentials in AWS Secrets Manager
-####################################################################
 
 resource "aws_secretsmanager_secret" "db_credentials" {
   name                    = "eks/postgres/credentials"
@@ -122,9 +108,7 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
   })
 }
 
-####################################################################
 # RDS Postgres Instance
-####################################################################
 
 resource "aws_db_instance" "postgres" {
   identifier = "eks-demo-postgres"
@@ -162,9 +146,7 @@ resource "aws_db_instance" "postgres" {
   }
 }
 
-####################################################################
 # Outputs
-####################################################################
 
 output "rds_endpoint" {
   description = "RDS Postgres endpoint (host:port)"

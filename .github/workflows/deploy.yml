@@ -182,6 +182,7 @@ jobs:
       - name: Print deployment summary
         if: success()
         run: |
+          IMAGE_TAG="${{ env.IMAGE_NAME }}:${{ github.sha }}"
           echo "======================================================"
           echo " Deployment successful"
           echo " Image: ${{ env.IMAGE_TAG }}"

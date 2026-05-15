@@ -1,10 +1,6 @@
-####################################################################
-#
 # AWS Load Balancer Controller - IRSA Setup
-#
+
 # After applying, install the controller with Helm
-#
-####################################################################
 
 # Trust policy that allows ONLY the aws-load-balancer-controller ServiceAccount in the kube-system namespace to assume this role.
 

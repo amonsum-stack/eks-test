@@ -1,9 +1,11 @@
 variable "vpc_cidr" {}
 variable "vpc_name" {}
 variable "cidr_subnet_public" {
-    type = list(string)
+  type = list(string)
 }
-variable "cidr_subnet_private" {}
+variable "cidr_subnet_private" {
+  type = list(string)
+}
 variable "us_availability_zone" {}
 
 output "vpc_id" {
@@ -18,6 +20,11 @@ output "private_subnet_id" {
   value = aws_subnet.private[*].id
 }
 
+# Exposed needed for NAT module to add a route to it
+output "private_route_table_id" {
+  value = aws_route_table.private.id
+}
+
 
 # Create a VPC
 resource "aws_vpc" "main" {
@@ -28,12 +35,12 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Create a public subnet for app
+# Public subnets — LB and bastion live here
 resource "aws_subnet" "public" {
-  count             = length(var.cidr_subnet_public)
-  vpc_id = aws_vpc.main.id
-  cidr_block = var.cidr_subnet_public[count.index]
-  availability_zone = var.us_availability_zone[count.index]
+  count                   = length(var.cidr_subnet_public)
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.cidr_subnet_public[count.index]
+  availability_zone       = var.us_availability_zone[count.index]
   map_public_ip_on_launch = true
 
   tags = {
@@ -41,11 +48,11 @@ resource "aws_subnet" "public" {
   }
 }
 
-# Create a private subnet for RDS
+# Private subnets — EC2 app instances and RDS live here
 resource "aws_subnet" "private" {
-  count  = length(var.cidr_subnet_private)
-  vpc_id = aws_vpc.main.id
-  cidr_block = var.cidr_subnet_private[count.index]
+  count             = length(var.cidr_subnet_private)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.cidr_subnet_private[count.index]
   availability_zone = var.us_availability_zone[count.index]
 
   tags = {
@@ -53,8 +60,7 @@ resource "aws_subnet" "private" {
   }
 }
 
-
-# Internet Gateway
+# Internet Gateway — for public subnets only
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -63,9 +69,10 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Route Table for public subnet
+# Public route table — routes internet traffic via IGW
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
+
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.main.id
@@ -76,14 +83,14 @@ resource "aws_route_table" "public" {
   }
 }
 
-# Associate public subnet with route table
+# Associate public subnets with the public route table
 resource "aws_route_table_association" "public" {
   count          = length(var.cidr_subnet_public)
-  subnet_id = aws_subnet.public[count.index].id
+  subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
 
-# Private route table (no internet access)
+# Private route table — outbound route to NAT is added by the nat module
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
@@ -92,12 +99,9 @@ resource "aws_route_table" "private" {
   }
 }
 
-# Associate private subnet with route table
+# Associate private subnets with the private route table
 resource "aws_route_table_association" "private" {
-  count = length(var.cidr_subnet_private)
-  subnet_id =  aws_subnet.private[count.index].id
+  count          = length(var.cidr_subnet_private)
+  subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
-} 
-
-
-
+}

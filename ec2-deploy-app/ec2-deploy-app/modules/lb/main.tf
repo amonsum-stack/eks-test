@@ -6,8 +6,6 @@ variable "lb_name" {}
 variable "lb_type" {}
 variable "public_subnet_id" {}
 
-
-# Create a load balancer
 resource "aws_lb" "app_lb" {
   name               = var.lb_name
   internal           = false
@@ -24,3 +22,7 @@ output "lb_arn" {
   value = aws_lb.app_lb.arn
 }
 
+output "lb_dns_name" {
+  description = "Public DNS name of the load balancer"
+  value       = aws_lb.app_lb.dns_name
+}
