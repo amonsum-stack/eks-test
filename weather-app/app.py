@@ -21,6 +21,7 @@ Metrics:
   - Custom gauge: belgrade_pressure_hpa
 """
 # test CI/CD pipeline trigger
+# 1 more test for CI/CD pipeline trigger
 
 import json
 import os

@@ -19,7 +19,14 @@ prometheus:
     retention: 6h          
 
     #emptyDir
-    storageSpec: {}
+    storageSpec: 
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp2
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
 
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorSelector: {}
@@ -47,7 +54,9 @@ grafana:
 
   #emptyDir
   persistence:
-    enabled: false
+    enabled: true
+    storageClassName: gp2
+    size: 5Gi
 
   # Pre-configure Prometheus datasource, this collides with the HELM deployment
   # datasources:

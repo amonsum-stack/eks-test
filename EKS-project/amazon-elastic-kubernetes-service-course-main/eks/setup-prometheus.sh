@@ -65,6 +65,4 @@ echo "Credentials: admin / admin  (change on first login)"
 echo ""
 echo "Prometheus port-forward:"
 echo "  kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090"
-echo ""
-echo "Next step: apply the weather app ServiceMonitor"
-echo "  kubectl apply -f k8s/weather/weather-servicemonitor.yaml"
+

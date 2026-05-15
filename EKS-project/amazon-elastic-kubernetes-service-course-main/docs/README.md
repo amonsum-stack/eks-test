@@ -300,6 +300,37 @@ You can verify this on the Web-UI. Go for S3 and you should see a backup bucket 
 
 ### 9. Deploy Prometheus and Grafana
 
+> Before applying prometheus/grafana enable EBS CSI addon with the following command in order to provide PVs for prometheus/grafana
+```bash
+aws eks create-addon \
+  --cluster-name demo-eks \
+  --addon-name aws-ebs-csi-driver \
+  --region us-east-1
+```
+> After that you can check if the addon is active
+```bash
+aws eks describe-addon \
+  --cluster-name demo-eks \
+  --addon-name aws-ebs-csi-driver \
+  --region us-east-1 \
+  --query 'addon.status'
+```
+> Applying the IRSA role is not needed here, nor the lab SCP allows it, however the role is inhereted from the nodes and policies
+that were originally applied at the start of the cluster. 
+
+> The volumes can be further checked with
+```bash
+ kubectl get pvc -n monitoring
+```
+```bash
+aws ec2 describe-volumes \
+  --filters "Name=tag-key,Values=kubernetes.io/created-for/pvc/name" \
+  --query 'Volumes[].{ID:VolumeId,Size:Size,State:State,PVC:Tags[?Key==`kubernetes.io/created-for/pvc/name`].Value|[0]}' \
+  --output table \
+  --region us-east-1
+```
+
+
 ```bash
 chmod +x setup-prometheus.sh
 ./setup-prometheus.sh
@@ -338,7 +369,7 @@ aws cloudwatch describe-alarms \
 
 ### 11. Apply Network Policies
 
-Enable the VPC CNI network policy enforcement first. Go to EKS -> Clusters -> demo-eks -> Add-ons -> vpc-cni -> Edit configuration and set:
+Enable the VPC CNI network policy enforcement first. Go to EKS -> Clusters -> demo-eks -> Add-ons -> vpc-cni -> Edit optional configuration and set:
 
 ```json
 {"enableNetworkPolicy": "true"}
@@ -510,5 +541,5 @@ terraform destroy
 ## Things to Add (Future Work)
 
 - **Route 53 + ACM** — custom domain with HTTPS. ALB terminates TLS, pods receive plain HTTP. Requires updating Ingress annotations for port 443 and HTTP→HTTPS redirect
-- **EBS CSI addon** — enables persistent storage for Prometheus and Grafana so metrics survive pod restarts
 - **Pod Identity** — simpler alternative to IRSA, no OIDC dependency, associations visible in EKS console. Unable due to lab limitations
+- **Upgrade AMI** - Migrate node AMI from Amazon Linux 2 to Amazon Linux 2023 before upgrading past EKS 1.32. This is currently running on Kubernetes 1.31, and the latest is 1.36. 
