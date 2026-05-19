@@ -13,6 +13,11 @@ variable "cidr_subnet_public" {
   type        = list(string)
 }
 
+variable "cidr_subnet_private" {
+  description = "The CIDR blocks for the private subnets"
+  type        = list(string)
+}
+
 variable "us_availability_zone" {
   description = "The availability zones for the subnets"
   type        = list(string)
@@ -58,14 +63,32 @@ variable "ec2_instance_type" {
   description = "EC2 instance type for worker nodes"
 }
 
-
-variable "sqs_queue_name" {
+variable "db_username" {
   type        = string
-  description = "Name of the SQS queue"
+  description = "Username for RDS Postgres database"
 }
 
-variable "sqs_namespace" {
+variable "db_name" {
   type        = string
-  description = "Kubernetes namespace where producer and consumer run"
+  description = "Name of the RDS Postgres database"
 }
 
+variable "db_engine" {
+  type        = string
+  description = "Database engine for RDS instance (e.g. postgres, mysql)"
+}
+
+variable "engine_version" {
+  type        = string
+  description = "Version of the database engine"
+}
+
+variable "instance_class" {
+  type        = string
+  description = "Instance class for the RDS instance"
+}
+
+variable "alert_email" {
+  type        = string
+  description = "Email address to receive CloudWatch alarm notifications"
+}

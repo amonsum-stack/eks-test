@@ -17,6 +17,8 @@ resource "aws_sns_topic" "eks_alarms" {
 */
 
 # Issue with tags, probably lab environment, so ignoring for now
+variable "alert_email" {}
+
 
 resource "aws_sns_topic" "rds_alarms" {
   name = "eks-rds-alarms"

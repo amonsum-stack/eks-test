@@ -3,6 +3,9 @@ variable "vpc_name" {}
 variable "cidr_subnet_public" {
   type = list(string)
 }
+variable "cidr_subnet_private" {
+  type = list(string)
+}
 variable "us_availability_zone" {}
 
 output "vpc_id" {
@@ -11,6 +14,10 @@ output "vpc_id" {
 
 output "public_subnet_id" {
   value = aws_subnet.public[*].id
+}
+
+output "private_subnet_id" {
+  value = aws_subnet.private[*].id
 }
 
 # Create a VPC
@@ -34,7 +41,7 @@ resource "aws_subnet" "public" {
     Name = "${var.vpc_name}-public-subnet-${count.index + 1}"
   }
 }
-/*
+
 # Private subnets 
 resource "aws_subnet" "private" {
   count             = length(var.cidr_subnet_private)
@@ -46,7 +53,7 @@ resource "aws_subnet" "private" {
     Name = "${var.vpc_name}-private-subnet-${count.index + 1}"
   }
 }
-*/
+
 # Internet Gateway — for public subnets only
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
@@ -76,7 +83,7 @@ resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
-/*
+
 # Private route table — outbound route to NAT is added by the nat module
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
@@ -92,4 +99,3 @@ resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
 }
-*/

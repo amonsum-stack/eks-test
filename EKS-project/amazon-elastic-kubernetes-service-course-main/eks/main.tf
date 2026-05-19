@@ -3,6 +3,7 @@ module "network" {
   vpc_cidr             = var.vpc_cidr
   vpc_name             = var.vpc_name
   cidr_subnet_public   = var.cidr_subnet_public
+  cidr_subnet_private  = var.cidr_subnet_private
   us_availability_zone = var.us_availability_zone
 }
 
@@ -34,6 +35,36 @@ module "eks" {
   depends_on = [module.cluster_role, module.additional_policies]
 }
 
+module "rds" {
+  source = "./modules/rds"
+  private_subnet_id = module.network.private_subnet_id
+  vpc_id = module.network.vpc_id
+  node_security_group_id = module.eks.node_security_group_id
+  db_username = var.db_username
+  db_name = var.db_name
+  db_engine = var.db_engine
+  engine_version = var.engine_version
+  instance_class = var.instance_class
+}
+
+module "cloudwatch" {
+  source = "./modules/cloudwatch"
+  instance_identifier = module.rds.rds_instance_identifier
+  alarm_sns_topic_arn = module.sns.rds_alarms.arn
+  ok_sns_topic_arn = module.sns.rds_alarms.arn
+}
+
+module "sns" {
+  source = "./modules/sns"
+  alert_email = var.alert_email
+}
+
+module "s3_backup" {
+  source = "./modules/s3_backup"
+  cluster_name = var.cluster_name
+  oidc_provider_url = module.oidc.oidc_provider_url
+}
+
 module "oidc" {
   source            = "./modules/oidc"
   oidc_issuer_url   = module.eks.oidc_issuer_url
@@ -49,17 +80,6 @@ module "alb_controller" {
 
   depends_on = [module.oidc]
 }
-
-module "sqs" {
-  source            = "./modules/sqs"
-  queue_name        = var.sqs_queue_name
-  oidc_provider_arn = module.oidc.oidc_provider_arn
-  oidc_provider_url = module.oidc.oidc_provider_url
-  namespace         = var.sqs_namespace
-
-  depends_on = [module.oidc]
-}
-
 
 data "aws_ssm_parameter" "node_ami" {
   name = "/aws/service/eks/optimized-ami/1.35/amazon-linux-2023/x86_64/standard/recommended/image_id"
@@ -77,14 +97,3 @@ output "alb_controller_irsa_arn" {
   value = module.alb_controller.alb_controller_irsa_arn
 }
 
-output "sqs_queue_url" {
-  value = module.sqs.queue_url
-}
-
-output "sqs_producer_irsa_arn" {
-  value = module.sqs.producer_irsa_arn
-}
-
-output "sqs_consumer_irsa_arn" {
-  value = module.sqs.consumer_irsa_arn
-}

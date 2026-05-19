@@ -11,6 +11,9 @@
 #   6. IAM policy scoped to PutObject/ListBucket on this bucket only
 #   7. IRSA role trusted by the backup-job ServiceAccount
 
+variable "cluster_name" {}
+variable "oidc_provider_url" {}
+
 # S3 Bucket
 
 resource "aws_s3_bucket" "db_backups" {
@@ -131,13 +134,13 @@ data "aws_iam_policy_document" "backup_assume_role" {
 
     condition {
       test     = "StringEquals"
-      variable = "${local.oidc_provider_url}:sub"
+      variable = "${var.oidc_provider_url}:sub"
       values   = ["system:serviceaccount:weather:backup-job"]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${local.oidc_provider_url}:aud"
+      variable = "${var.oidc_provider_url}:aud"
       values   = ["sts.amazonaws.com"]
     }
   }

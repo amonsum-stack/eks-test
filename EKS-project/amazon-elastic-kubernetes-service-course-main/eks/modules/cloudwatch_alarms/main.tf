@@ -67,6 +67,10 @@ resource "aws_cloudwatch_metric_alarm" "eks_node_status_check" {
 */
 # Node alarms are disabled since we are using prometheus and grafana for monitoring.
 
+variable "instance_identifier" {}
+variable "alarm_sns_topic_arn" {}
+variable "ok_sns_topic_arn" {}
+
 # RDS Alarms
 
 # High CPU on RDS instance
@@ -83,11 +87,11 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    DBInstanceIdentifier = aws_db_instance.postgres.identifier
+    DBInstanceIdentifier = var.instance_identifier
   }
 
-  alarm_actions = [aws_sns_topic.rds_alarms.arn]
-  ok_actions    = [aws_sns_topic.rds_alarms.arn]
+  alarm_actions = [var.alarm_sns_topic_arn]
+  ok_actions    = [var.ok_sns_topic_arn]
 
   tags = {
     Name = "rds-cpu-high"
@@ -108,11 +112,11 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage_low" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    DBInstanceIdentifier = aws_db_instance.postgres.identifier
+    DBInstanceIdentifier = var.instance_identifier
   }
 
-  alarm_actions = [aws_sns_topic.rds_alarms.arn]
-  ok_actions    = [aws_sns_topic.rds_alarms.arn]
+  alarm_actions = [var.alarm_sns_topic_arn]
+  ok_actions    = [var.ok_sns_topic_arn]
 
   tags = {
     Name = "rds-storage-low"
@@ -133,11 +137,11 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections_high" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    DBInstanceIdentifier = aws_db_instance.postgres.identifier
+    DBInstanceIdentifier = var.instance_identifier
   }
 
-  alarm_actions = [aws_sns_topic.rds_alarms.arn]
-  ok_actions    = [aws_sns_topic.rds_alarms.arn]
+  alarm_actions = [var.alarm_sns_topic_arn]
+  ok_actions    = [var.ok_sns_topic_arn]
 
   tags = {
     Name = "rds-connections-high"

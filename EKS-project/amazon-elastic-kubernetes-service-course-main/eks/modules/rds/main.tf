@@ -11,6 +11,7 @@
 
 # Private Subnets — one per AZ, no route to internet
 
+/*
 resource "aws_subnet" "private" {
   count             = 3
   vpc_id            = data.aws_vpc.default_vpc.id
@@ -36,13 +37,23 @@ resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
 }
+*/
+
+variable "private_subnet_id" {}
+variable "vpc_id" {}
+variable "node_security_group_id" {}
+variable "db_username" {}
+variable "db_name" {}
+variable "db_engine" {}
+variable "engine_version" {}
+variable "instance_class" {}
 
 # DB Subnet Group — RDS requires subnets in at least 2 AZs
 
 resource "aws_db_subnet_group" "postgres" {
   name        = "eks-postgres-subnet-group"
   description = "Private subnets for EKS RDS Postgres"
-  subnet_ids  = aws_subnet.private[*].id
+  subnet_ids  = var.private_subnet_id
 
   tags = {
     Name = "eks-postgres-subnet-group"
@@ -54,7 +65,7 @@ resource "aws_db_subnet_group" "postgres" {
 resource "aws_security_group" "rds" {
   name        = "eks-rds-sg"
   description = "Allow Postgres access from EKS worker nodes only"
-  vpc_id      = data.aws_vpc.default_vpc.id
+  vpc_id      = var.vpc_id
 
   tags = {
     Name = "eks-rds-sg"
@@ -64,7 +75,7 @@ resource "aws_security_group" "rds" {
 resource "aws_vpc_security_group_ingress_rule" "rds_from_nodes" {
   description                  = "Allow Postgres from EKS worker nodes"
   security_group_id            = aws_security_group.rds.id
-  referenced_security_group_id = aws_security_group.node_security_group.id
+  referenced_security_group_id = var.node_security_group_id
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "TCP"
@@ -113,9 +124,9 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
 resource "aws_db_instance" "postgres" {
   identifier = "eks-demo-postgres"
 
-  engine         = "postgres"
-  engine_version = "16"
-  instance_class = "db.t3.micro"
+  engine         = var.db_engine
+  engine_version = var.engine_version
+  instance_class = var.instance_class
 
   allocated_storage     = 20
   max_allocated_storage = 100 
@@ -156,4 +167,9 @@ output "rds_endpoint" {
 output "rds_secret_arn" {
   description = "ARN of the Secrets Manager secret containing DB credentials"
   value       = aws_secretsmanager_secret.db_credentials.arn
+}
+
+output "rds_instance_identifier" {
+  description = "Identifier of the RDS instance (used for CloudWatch alarms)"
+  value       = aws_db_instance.postgres.identifier
 }
