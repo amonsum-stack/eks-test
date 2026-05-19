@@ -25,7 +25,8 @@ module "eks" {
   vpc_id                      = module.network.vpc_id
   subnet_ids                  = module.network.public_subnet_id
   node_role_name              = var.node_role_name
-  additional_policy_name      = var.additional_policy_name
+  # additional_policy_name      = var.additional_policy_name
+  additional_policy_arn       = module.additional_policies.policy_arn
   node_group_desired_capacity = var.node_group_desired_capacity
   node_group_max_size         = var.node_group_max_size
   node_group_min_size         = var.node_group_min_size

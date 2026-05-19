@@ -5,7 +5,8 @@ variable "subnet_ids" {
   type = list(string)
 }
 variable "node_role_name" {}
-variable "additional_policy_name" {}
+# variable "additional_policy_name" {}
+variable "additional_policy_arn" {}
 variable "node_group_desired_capacity" {}
 variable "node_group_max_size" {}
 variable "node_group_min_size" {}
@@ -111,12 +112,12 @@ resource "aws_iam_role_policy_attachment" "node_instance_role_SSMMIC" {
   role       = aws_iam_role.node_instance_role.name
 }
 
-data "aws_iam_policy" "additional_policy" {
-  name = var.additional_policy_name
-}
+# data "aws_iam_policy" "additional_policy" {
+#  name = var.additional_policy_name
+#}
 
 resource "aws_iam_role_policy_attachment" "node_instance_role_loadbalancer" {
-  policy_arn = data.aws_iam_policy.additional_policy.arn
+  policy_arn = var.additional_policy.arn
   role       = aws_iam_role.node_instance_role.name
 }
 
@@ -273,7 +274,7 @@ resource "aws_launch_template" "node_launch_template" {
   metadata_options {
     http_put_response_hop_limit = 2
     http_endpoint               = "enabled"
-    http_tokens                 = "optional"
+    http_tokens                 = "optional" # this should be set to requried in production for more security tokens
   }
 
   tag_specifications {
