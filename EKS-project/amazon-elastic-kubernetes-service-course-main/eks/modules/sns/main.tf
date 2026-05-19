@@ -18,7 +18,7 @@ resource "aws_sns_topic" "eks_alarms" {
 
 # Issue with tags, probably lab environment, so ignoring for now
 variable "alert_email" {}
-variable "aws_s3_bucket_arn" {}
+# variable "aws_s3_bucket_arn" {}
 
 
 resource "aws_sns_topic" "rds_alarms" {
@@ -61,7 +61,7 @@ resource "aws_sns_topic_subscription" "backup_events_email" {
 }
 
 # SNS Topic Policy for S3 — allows the backup bucket to publish to the backup_events topic when a new object is created
-
+/*
 resource "aws_sns_topic_policy" "backup_events_s3" {
   arn = aws_sns_topic.backup_events.arn
 
@@ -85,7 +85,7 @@ resource "aws_sns_topic_policy" "backup_events_s3" {
     ]
   })
 }
-
+*/
 # Outputs
 /*
 output "sns_eks_alarms_arn" {

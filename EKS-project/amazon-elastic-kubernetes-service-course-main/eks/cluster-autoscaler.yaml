@@ -23,6 +23,15 @@ metadata:
     k8s-addon: cluster-autoscaler.addons.k8s.io
     k8s-app: cluster-autoscaler
 rules:
+  - apiGroups: ["resource.k8s.io"]
+    resources: ["resourceslices", "resourceclaims", "resourceclaimtemplates", "deviceclasses"]
+    verbs: ["watch", "list", "get"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses", "csinodes", "csidrivers", "csistoragecapacities", "volumeattachments"]
+    verbs: ["watch", "list", "get"]
+  - apiGroups: ["resource.k8s.io"]
+    resources: ["resourceslices", "resourceclaims", "resourceclaimtemplates"]
+    verbs: ["watch", "list", "get"]
   - apiGroups: [""]
     resources: ["events", "endpoints"]
     verbs: ["create", "patch"]

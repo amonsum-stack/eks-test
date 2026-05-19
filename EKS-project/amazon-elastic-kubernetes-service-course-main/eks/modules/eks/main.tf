@@ -301,6 +301,9 @@ spec:
     apiServerEndpoint: ${aws_eks_cluster.demo_eks.endpoint}
     certificateAuthority: ${aws_eks_cluster.demo_eks.certificate_authority[0].data}
     cidr: ${aws_eks_cluster.demo_eks.kubernetes_network_config[0].service_ipv4_cidr}
+  kubelet:
+    config:
+      maxPods: 110
 EOF
   )
 }

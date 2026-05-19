@@ -74,7 +74,7 @@ export TF_VAR_alert_email="you@example.com"
 Update your kubeconfig:
 
 ```bash
-aws eks update-kubeconfig --region us-east-1 --name demo-eks
+aws eks update-kubeconfig --region us-east-1 --name eks-demo-cluster
 ```
 
 Edit `aws-auth-cm.yaml` and replace the placeholder with your `NodeInstanceRole` ARN from the Terraform output:
@@ -202,7 +202,7 @@ Dont forget to add http://ALB-URL
 
 ---
 
-#### Enable VPC CNI prefix delegation (recommended before applying HPA)
+#### Enable VPC CNI prefix delegation (recommended before applying HPA) THIS NEEDS TO BE TESTED AGAIN, SOMETHING IS WRONG WITH CNI ADDON
 
 By default t3.medium nodes can only run ~17 pods due to ENI IP limits. Prefix delegation increases this to ~110 pods per node by assigning a /28 prefix per ENI slot instead of individual IPs. This is usually recomended regardeless the node size.
 
@@ -211,9 +211,11 @@ kubectl set env daemonset aws-node \
   -n kube-system \
   ENABLE_PREFIX_DELEGATION=true
 
+kubectl set env daemonset aws-node -n kube-system WARM_PREFIX_TARGET=1
+
 kubectl rollout restart daemonset aws-node -n kube-system
 
-kubectl get daemonset aws-node -n kube-system -o yaml | grep ENABLE_PREFIX_DELEGATION
+kubectl get daemonset aws-node -n kube-system -o yaml | grep -A1 ENABLE_PREFIX_DELEGATION
 ```
 
 ---

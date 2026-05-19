@@ -35,6 +35,31 @@ module "eks" {
   depends_on = [module.cluster_role, module.additional_policies]
 }
 
+resource "aws_eks_addon" "vpc_cni" {
+  cluster_name                = var.cluster_name
+  addon_name                  = "vpc-cni"
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  configuration_values = jsonencode({
+    env = {
+      ENABLE_PREFIX_DELEGATION = "true"
+      WARM_PREFIX_TARGET       = "1"
+    }
+    enableNetworkPolicy = "true"
+  })
+
+  depends_on = [module.eks]
+}
+
+resource "aws_eks_addon" "ebs_csi" {
+  cluster_name = var.cluster_name
+  addon_name   = "aws-ebs-csi-driver"
+  resolve_conflicts_on_create = "OVERWRITE"
+
+  depends_on = [module.eks]
+}
+
 module "rds" {
   source = "./modules/rds"
   private_subnet_id = module.network.private_subnet_id
@@ -57,7 +82,7 @@ module "cloudwatch" {
 module "sns" {
   source = "./modules/sns"
   alert_email = var.alert_email
-  aws_s3_bucket_arn = module.s3_backup.aws_s3_bucket_arn
+  # aws_s3_bucket_arn = module.s3_backup.aws_s3_bucket_arn
 }
 
 module "s3_backup" {
@@ -65,6 +90,7 @@ module "s3_backup" {
   cluster_name = var.cluster_name
   oidc_provider_url = module.oidc.oidc_provider_url
   oidc_provider_arn = module.oidc.oidc_provider_arn
+  backup_sns_topic_arn = module.sns.sns_backup_events_arn
 }
 
 module "oidc" {

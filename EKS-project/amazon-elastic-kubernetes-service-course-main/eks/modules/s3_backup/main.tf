@@ -161,6 +161,45 @@ resource "aws_iam_role_policy_attachment" "backup_irsa_policy" {
   role       = aws_iam_role.backup_irsa.name
 }
 
+# S3 Event Notification — Backup Completion
+variable "backup_sns_topic_arn" {}
+
+resource "aws_sns_topic_policy" "backup_events_s3" {
+  arn = var.backup_sns_topic_arn
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowS3Publish"
+        Effect = "Allow"
+        Principal = {
+          Service = "s3.amazonaws.com"
+        }
+        Action   = "SNS:Publish"
+        Resource = var.backup_sns_topic_arn
+        Condition = {
+          ArnLike = {
+            "aws:SourceArn" = aws_s3_bucket.db_backups.arn
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_s3_bucket_notification" "backup_notification" {
+  bucket = aws_s3_bucket.db_backups.id
+  topic {
+    topic_arn  = var.backup_sns_topic_arn
+    events     = ["s3:ObjectCreated:*"]
+    filter_prefix = "backups/"
+    filter_suffix = ".sql.gz"
+  }
+
+  depends_on = [aws_sns_topic_policy.backup_events_s3]
+}
+
 # Outputs
 
 output "backup_bucket_name" {
