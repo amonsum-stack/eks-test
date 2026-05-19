@@ -22,6 +22,10 @@ serviceAccount:
 # Run 2 replicas for resilience across nodes
 replicaCount: 2
 
+region: us-east-1
+
+vpcId: <output from the VPC-ID terraform output>
+
 # Resource requests — t3.medium nodes are modest, keep this lean
 resources:
   requests:

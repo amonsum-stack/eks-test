@@ -543,3 +543,4 @@ terraform destroy
 - **Route 53 + ACM** — custom domain with HTTPS. ALB terminates TLS, pods receive plain HTTP. Requires updating Ingress annotations for port 443 and HTTP→HTTPS redirect
 - **Pod Identity** — simpler alternative to IRSA, no OIDC dependency, associations visible in EKS console. Unable due to lab limitations
 - **Upgrade AMI** - Migrate node AMI from Amazon Linux 2 to Amazon Linux 2023 before upgrading past EKS 1.32. This is currently running on Kubernetes 1.31, and the latest is 1.36. 
+- **Grafana-setup** - In the production setting grafana should go over vpn and internal Load balancer that is reachable within VPC. Or maybe with a office vpn and public load balancer that is locked to specific ip range, along with SSO that is present on Grafana. Route 53 and acm should be enabled i think.
