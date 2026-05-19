@@ -48,7 +48,7 @@ module "rds" {
 }
 
 module "cloudwatch" {
-  source = "./modules/cloudwatch"
+  source = "./modules/cloudwatch_alarms"
   instance_identifier = module.rds.rds_instance_identifier
   alarm_sns_topic_arn = module.sns.sns_rds_alarms_arn
   ok_sns_topic_arn = module.sns.sns_rds_alarms_arn
@@ -97,5 +97,13 @@ output "vpc_id" {
 
 output "alb_controller_irsa_arn" {
   value = module.alb_controller.alb_controller_irsa_arn
+}
+
+output "backup_irsa_role_arn" {
+  value = module.s3_backup.backup_irsa_role_arn
+}
+
+output "backup_bucket_name" {
+  value = module.s3_backup.backup_bucket_name
 }
 

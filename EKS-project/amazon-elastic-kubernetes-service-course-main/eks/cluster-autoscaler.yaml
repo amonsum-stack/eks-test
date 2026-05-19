@@ -3,7 +3,7 @@
 # Watches for Pending pods (no room on nodes) and scales the ASG up.
 # Watches for underutilized nodes and scales the ASG down.
 #
-# Version must match your EKS cluster version (1.31).
+# Version must match your EKS cluster version (1.35).
 # Check latest at: https://github.com/kubernetes/autoscaler/releases
 
 apiVersion: v1
@@ -157,8 +157,8 @@ spec:
 
       containers:
         - name: cluster-autoscaler
-          # Pin to the minor version matching your cluster (EKS 1.31)
-          image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.31.0
+          # Pin to the minor version matching your cluster (EKS 1.35)
+          image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.35.0
           command:
             - ./cluster-autoscaler
             - --v=4
@@ -166,7 +166,7 @@ spec:
             - --cloud-provider=aws
             - --skip-nodes-with-local-storage=false
             - --expander=least-waste
-            - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/demo-eks
+            - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/eks-demo-cluster
             - --balance-similar-node-groups
             - --skip-nodes-with-system-pods=false
             - --scale-down-enabled=true
