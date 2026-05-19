@@ -50,19 +50,21 @@ module "rds" {
 module "cloudwatch" {
   source = "./modules/cloudwatch"
   instance_identifier = module.rds.rds_instance_identifier
-  alarm_sns_topic_arn = module.sns.rds_alarms.arn
-  ok_sns_topic_arn = module.sns.rds_alarms.arn
+  alarm_sns_topic_arn = module.sns.sns_rds_alarms_arn
+  ok_sns_topic_arn = module.sns.sns_rds_alarms_arn
 }
 
 module "sns" {
   source = "./modules/sns"
   alert_email = var.alert_email
+  aws_s3_bucket_arn = module.s3_backup.aws_s3_bucket_arn
 }
 
 module "s3_backup" {
   source = "./modules/s3_backup"
   cluster_name = var.cluster_name
   oidc_provider_url = module.oidc.oidc_provider_url
+  oidc_provider_arn = module.oidc.oidc_provider_arn
 }
 
 module "oidc" {

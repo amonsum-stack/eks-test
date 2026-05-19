@@ -13,6 +13,7 @@
 
 variable "cluster_name" {}
 variable "oidc_provider_url" {}
+variable "oidc_provider_arn" {}
 
 # S3 Bucket
 
@@ -129,7 +130,7 @@ data "aws_iam_policy_document" "backup_assume_role" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.eks_oidc_provider.arn]
+      identifiers = [var.oidc_provider_arn]
     }
 
     condition {
@@ -171,4 +172,10 @@ output "backup_bucket_name" {
   description = "IAM role ARN to annotate the backup-job ServiceAccount with"
   value       = aws_iam_role.backup_irsa.arn
 }
+
+output "aws_s3_bucket_arn" {
+  description = "ARN of the S3 bucket (for SNS topic policy)"
+  value       = aws_s3_bucket.db_backups.arn
+}
+
 

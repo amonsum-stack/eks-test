@@ -162,11 +162,11 @@ resource "aws_cloudwatch_metric_alarm" "rds_instance_down" {
   treat_missing_data  = "breaching" # If no data, treat as down
 
   dimensions = {
-    DBInstanceIdentifier = aws_db_instance.postgres.identifier
+    DBInstanceIdentifier = var.instance_identifier
   }
 
-  alarm_actions = [aws_sns_topic.rds_alarms.arn]
-  ok_actions    = [aws_sns_topic.rds_alarms.arn]
+  alarm_actions = [var.alarm_sns_topic_arn]
+  ok_actions    = [var.ok_sns_topic_arn]
 
   tags = {
     Name = "rds-instance-down"

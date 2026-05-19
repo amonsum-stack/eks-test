@@ -18,6 +18,7 @@ resource "aws_sns_topic" "eks_alarms" {
 
 # Issue with tags, probably lab environment, so ignoring for now
 variable "alert_email" {}
+variable "aws_s3_bucket_arn" {}
 
 
 resource "aws_sns_topic" "rds_alarms" {
@@ -77,7 +78,7 @@ resource "aws_sns_topic_policy" "backup_events_s3" {
         Resource = aws_sns_topic.backup_events.arn
         Condition = {
           ArnLike = {
-            "aws:SourceArn" = aws_s3_bucket.db_backups.arn
+            "aws:SourceArn" = var.aws_s3_bucket_arn
           }
         }
       }
