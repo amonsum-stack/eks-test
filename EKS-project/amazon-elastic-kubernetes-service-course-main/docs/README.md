@@ -65,7 +65,7 @@ terraform apply
 ```bash
 aws eks update-kubeconfig --region us-east-1 --name eks-demo-cluster
 ```
-and then apply aws-auth-cm.yaml with approriate `NodeInstanceRole` this will register the nodes to the cluster and EBS addon pods will start working normally. 
+and then apply aws-auth-cm.yaml with approriate `NodeInstanceRole` this will register the nodes to the cluster and EBS addon pods will start working normally. These steps are needed regardless of the addon, since the worker nodes need to be registered to the cluster!
 
 You can check with 
 ```bash
@@ -75,6 +75,8 @@ kubectl get nodes -o wide
 kubectl get pods -n kube-system | grep ebs
 ```
 > This should display csi-controller and nodes running.
+
+# NOTE: that this deployment is due to lab constraints. In normal situations you could deploy the cluster-register the nodes and then apply the EBS addon to the already configured nodes. Howver, due to CSP policies in the lab this cannot be done.
 
 ### 3. Install the AWS Load Balancer Controller with alb-setup.sh
 
