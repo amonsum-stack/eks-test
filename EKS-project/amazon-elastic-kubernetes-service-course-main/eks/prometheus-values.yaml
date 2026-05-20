@@ -14,7 +14,14 @@ prometheus:
   prometheusSpec:
     scrapeInterval: 30s
     evaluationInterval: 30s
-    retention: 6h          
+    retention: 6h  
+    tolerations:
+      - key: "dedicated"
+        operator: "Equal"
+        value: "monitoring"
+        effect: "NoSchedule"
+    nodeSelector:
+      NodeType: monitoring        
 
     #emptyDir
     storageSpec: 
@@ -46,6 +53,13 @@ prometheus:
 
 grafana:
   enabled: true
+  tolerations:
+    - key: "dedicated"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    NodeType: monitoring
 
   adminUser: admin
   adminPassword: admin

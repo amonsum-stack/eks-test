@@ -40,3 +40,9 @@ echo "======================================================"
 echo " Done!"
 echo "======================================================"
 kubectl get deployment -n kube-system aws-load-balancer-controller
+
+echo "Applying ingress-class-name.yaml"
+kubectl apply -f ingress-class-name.yaml
+
+echo "Verify ingress-class"
+kubectl get ingressclass alb

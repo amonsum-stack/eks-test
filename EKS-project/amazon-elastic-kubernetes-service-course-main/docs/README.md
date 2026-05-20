@@ -44,6 +44,10 @@ Security:
 - jq
 
 ---
+> Remember to import your email address for sns notifications
+```bash
+export TF_VAR_alert_email="you@example.com"
+```
 
 ## Deployment Order
 
@@ -57,114 +61,35 @@ terraform plan
 terraform apply
 ```
 
-> **Takes 10–15 minutes.** Note all outputs when complete.
-
-Set your alert email before applying (required by SNS/CloudWatch):
-
-```bash
-export TF_VAR_alert_email="you@example.com"
-```
-
-> **Note on lab environments:** The `modules/` directory handles cases where `eksClusterRole` may already exist from a previous lab. In a fresh AWS account you can replace the module references with a straightforward `aws_iam_role` resource — see the comments in `eks.tf` for details. Deploying this as it is, with modules wont change anything.
-
----
-
-### 2. Configure kubectl and Join Nodes
-
-Update your kubeconfig:
-
+> **Takes around 20 minutes.** This is due to EBS addon not being able to register to EKS cluter nodes. After terraform timesout, you can go with 
 ```bash
 aws eks update-kubeconfig --region us-east-1 --name eks-demo-cluster
 ```
+and then apply aws-auth-cm.yaml with approriate `NodeInstanceRole` this will register the nodes to the cluster and EBS addon pods will start working normally. 
 
-Edit `aws-auth-cm.yaml` and replace the placeholder with your `NodeInstanceRole` ARN from the Terraform output:
-
-```yaml
-- rolearn: arn:aws:iam::<account-id>:role/eksWorkerNodeRole
-```
-
-Apply it:
-
-```bash
-kubectl apply -f aws-auth-cm.yaml
-```
-
-Wait ~60 seconds then verify nodes are Ready:
-
+You can check with 
 ```bash
 kubectl get nodes -o wide
 ```
+```bash
+kubectl get pods -n kube-system | grep ebs
+```
+> This should display csi-controller and nodes running.
 
-You should see 3 worker nodes in `Ready` state.
-
----
-
-### 3. Install the AWS Load Balancer Controller
-
-Add the Helm repo:
+### 3. Install the AWS Load Balancer Controller with alb-setup.sh
 
 ```bash
-helm repo add eks https://aws.github.io/eks-charts
-helm repo update
+chmod +x alb-setup.sh
+./alb-setup.sh
 ```
 
-Edit `alb-controller-values.yaml` and replace `<AlbControllerIrsaRoleArn>` with the value from Terraform output, then install:
-Replace the VPC-id with the terraform output
-
-
-```bash
-helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
-  -n kube-system \
-  -f alb-controller-values.yaml
-```
-
-Verify 2 replicas are running:
-
-```bash
-kubectl get deployment -n kube-system aws-load-balancer-controller
-```
-
-> **Note:** If you previously applied `ingress-class-name.yaml` manually, delete it before running Helm — the chart creates the IngressClass itself:
-> `kubectl delete ingressclass alb`
-
-> After installing alb-controllers you can deploy `ingress-class-name.yaml`.
-
----
-
-### 4. Install External Secrets Operator
+### 4. Install External Secrets Operator with script
 
 ESO syncs credentials from AWS Secrets Manager into Kubernetes Secrets automatically.
 
-> Create both namespaces `kubectl createnamespace demo/weather`
-
 ```bash
-helm repo add external-secrets https://charts.external-secrets.io
-helm repo update
-
-helm install external-secrets \
-  external-secrets/external-secrets \
-  -n external-secrets \
-  --create-namespace \
-  --wait
-```
-
-Verify CRDs are installed:
-
-```bash
-kubectl get crds | grep external-secrets
-```
-
-Apply the SecretStore and ExternalSecret resources:
-
-```bash
-kubectl apply -f external-secrets.yaml
-```
-
-Verify the secret was synced:
-
-```bash
-kubectl get externalsecret postgres-credentials -n weather
-kubectl get secret postgres-credentials -n weather
+chmod +x create-secrets.sh
+./create-secrets.sh
 ```
 
 > **How credentials work:** ESO pods inherit the node instance role (`eksWorkerNodeRole`), which has `SecretsManagerReadWrite` attached. ESO uses these ambient credentials to pull `eks/postgres/credentials` from Secrets Manager and create the `postgres-credentials` Kubernetes Secret in each namespace.
@@ -202,25 +127,6 @@ kubectl get ingress weather-app -n weather
 You can also do this from the Web-UI. Go to ec2 > loadbalancers in the main page you will see ALB URL copy that in the browser.
 Dont forget to add http://ALB-URL
 
----
-
-#### Enable VPC CNI prefix delegation (recommended before applying HPA) THIS NEEDS TO BE TESTED AGAIN, SOMETHING IS WRONG WITH CNI ADDON
-
-By default t3.medium nodes can only run ~17 pods due to ENI IP limits. Prefix delegation increases this to ~110 pods per node by assigning a /28 prefix per ENI slot instead of individual IPs. This is usually recomended regardeless the node size.
-
-```bash
-kubectl set env daemonset aws-node \
-  -n kube-system \
-  ENABLE_PREFIX_DELEGATION=true
-
-kubectl set env daemonset aws-node -n kube-system WARM_PREFIX_TARGET=1
-
-kubectl rollout restart daemonset aws-node -n kube-system
-
-kubectl get daemonset aws-node -n kube-system -o yaml | grep -A1 ENABLE_PREFIX_DELEGATION
-```
-
----
 
 ### 6. Enable Horizontal Pod Autoscaling
 
@@ -242,7 +148,10 @@ Apply the HPA:
 kubectl apply -f weather-hpa.yaml
 ```
 
-The HPA scales weather-app between 1–9 replicas based on CPU (>70%) and memory (>75%).
+The HPA scales weather-app between 1–9 replicas based on CPU (>70%) and memory (>75%). If you want to test the cluster autoscaler you need to change the max pods. 
+```bash
+kubectl patch hpa weather-app-hpa -n weather -p '{"spec":{"maxReplicas":20}}'
+```
 
 ---
 
@@ -259,11 +168,20 @@ Verify it discovered the ASG:
 ```bash
 kubectl logs -n kube-system -l app=cluster-autoscaler | grep -i "found\|node group"
 ```
+check if its running 
+```bash
+kubectl get pods -n kube-system | grep cluster-autoscaler
+```
+check the logs
+
+```bash
+kubectl logs -n kube-system -l app=cluster-autoscaler --tail=50
+```
 
 Test scale-up:
 
 ```bash
-kubectl scale deployment weather-app -n weather --replicas=15
+kubectl scale deployment weather-app -n weather --replicas=20
 kubectl get nodes -w
 ```
 
@@ -304,36 +222,18 @@ You can verify this on the Web-UI. Go for S3 and you should see a backup bucket 
 
 ### 9. Deploy Prometheus and Grafana
 
-> Before applying prometheus/grafana enable EBS CSI addon with the following command in order to provide PVs for prometheus/grafana
-```bash
-aws eks create-addon \
-  --cluster-name demo-eks \
-  --addon-name aws-ebs-csi-driver \
-  --region us-east-1
-```
-> After that you can check if the addon is active
-```bash
-aws eks describe-addon \
-  --cluster-name demo-eks \
-  --addon-name aws-ebs-csi-driver \
-  --region us-east-1 \
-  --query 'addon.status'
-```
-> Applying the IRSA role is not needed here, nor the lab SCP allows it, however the role is inhereted from the nodes and policies
-that were originally applied at the start of the cluster. 
+> Before deploying we can add taints/tolerations for monitoring. After the nodes have been registered pick a node that you want to taint for monitoring
 
-> The volumes can be further checked with
 ```bash
- kubectl get pvc -n monitoring
+kubectl label node <node-name> NodeType=monitoring
+kubectl taint node <node-name> dedicated=monitoring:NoSchedule
 ```
-```bash
-aws ec2 describe-volumes \
-  --filters "Name=tag-key,Values=kubernetes.io/created-for/pvc/name" \
-  --query 'Volumes[].{ID:VolumeId,Size:Size,State:State,PVC:Tags[?Key==`kubernetes.io/created-for/pvc/name`].Value|[0]}' \
-  --output table \
-  --region us-east-1
-```
+> Verify
 
+```bash
+kubectl describe node <node-name> | grep -A2 "Taints\|Labels"
+```
+> Inititate the script (tolerations are present in the values)
 
 ```bash
 chmod +x setup-prometheus.sh
@@ -373,32 +273,11 @@ aws cloudwatch describe-alarms \
 
 ### 11. Apply Network Policies
 
-Enable the VPC CNI network policy enforcement first. Go to EKS -> Clusters -> demo-eks -> Add-ons -> vpc-cni -> Edit optional configuration and set:
-
-```json
-{"enableNetworkPolicy": "true"}
-```
-
-Restart the daemonset to pick up the change:
-
-```bash
-kubectl rollout restart daemonset aws-node -n kube-system
-```
-
-Verify the `aws-eks-nodeagent` sidecar is running (shown as `2/2`):
-
-```bash
-kubectl get pods -n kube-system | grep aws-node
-```
-
-Apply the policies:
-
 ```bash
 kubectl apply -f network-policies.yaml
 ```
 
 > **Important:** Do not use Calico with this setup. The cluster uses the AWS VPC CNI which manages interfaces as `eni*`. Calico creates `cali*` interfaces and conflicts with the existing CNI, requiring node replacement to recover.
-> Note that this could also be done via terraform, deployment of the addon, but due to lab constraints i went with Web-UI.
 
 **Test enforcement:**
 
@@ -463,6 +342,8 @@ A CI/CD pipeline has been added in the `.github/workflows/deploy.yml` which trig
 
 Keep in mind that credentials in GitHub Actions need to be set according to your deployment. This includes AWS and Docker credentials (set in repo Settings -> Secrets).
 
+Credentials can also be sorted by creating a dedicated IAM user, however i wasn't been able to test this since SCP in the lab doesn't allow this.
+
 **Option A — Create a dedicated IAM user for GitHub Actions:**
 
 ```bash
@@ -500,14 +381,14 @@ mapUsers: |
 | require-readiness-probe | audit | Deployments should define readiness probes |
 
 > **Testing tip:** If you need to run test pods in the `weather` namespace and Kyverno blocks them, temporarily patch policies to audit mode:
-> ```bash
-> kubectl patch clusterpolicy require-app-label \
->   -p '{"spec":{"validationFailureAction":"Audit"}}' --type merge
-> kubectl patch clusterpolicy require-resource-limits \
->   -p '{"spec":{"validationFailureAction":"Audit"}}' --type merge
-> kubectl patch clusterpolicy disallow-latest-tag \
->   -p '{"spec":{"validationFailureAction":"Audit"}}' --type merge
-> ```
+ ```bash
+ kubectl patch clusterpolicy require-app-label \
+   -p '{"spec":{"validationFailureAction":"Audit"}}' --type merge
+ kubectl patch clusterpolicy require-resource-limits \
+   -p '{"spec":{"validationFailureAction":"Audit"}}' --type merge
+ kubectl patch clusterpolicy disallow-latest-tag \
+   -p '{"spec":{"validationFailureAction":"Audit"}}' --type merge
+```
 > Remember to switch back to `Enforce` when done.
 
 ---
@@ -546,5 +427,4 @@ terraform destroy
 
 - **Route 53 + ACM** — custom domain with HTTPS. ALB terminates TLS, pods receive plain HTTP. Requires updating Ingress annotations for port 443 and HTTP→HTTPS redirect
 - **Pod Identity** — simpler alternative to IRSA, no OIDC dependency, associations visible in EKS console. Unable due to lab limitations
-- **Upgrade AMI** - Migrate node AMI from Amazon Linux 2 to Amazon Linux 2023 before upgrading past EKS 1.32. This is currently running on Kubernetes 1.31, and the latest is 1.36. 
 - **Grafana-setup** - In the production setting grafana should go over vpn and internal Load balancer that is reachable within VPC. Or maybe with a office vpn and public load balancer that is locked to specific ip range, along with SSO that is present on Grafana. Route 53 and acm should be enabled i think.

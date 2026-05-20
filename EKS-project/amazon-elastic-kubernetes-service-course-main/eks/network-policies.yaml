@@ -8,7 +8,7 @@
 # Note on ALB + NetworkPolicy:
 #   With alb.ingress.kubernetes.io/target-type: ip, the ALB reaches pods directly using its own IP within the VPC.
 #   Since that source IP is not a pod, we cannot use podSelector to restrict it. 
-#   Instead we allow ingress from the VPC CIDR block (172.31.0.0/16 covers the default AWS VPC range).
+#   Instead we allow ingress from the VPC CIDR block (10.0.0.0/16 covers the default AWS VPC range).
 #   Adjust the cidr below if your VPC uses a different range.
 
 
@@ -52,7 +52,7 @@ spec:
   ingress:
     - from:
         - ipBlock:
-            cidr: 172.31.0.0/16
+            cidr: 10.0.0.0/16
       ports:
         - protocol: TCP
           port: 8080
@@ -73,7 +73,7 @@ spec:
 
     - to: # this part allows flask to comunicate with RDS
         - ipBlock:
-            cidr: 172.31.0.0/16
+            cidr: 10.0.0.0/16
       ports:
         - protocol: TCP
           port: 5432
@@ -81,7 +81,7 @@ spec:
         - ipBlock:
             cidr: 0.0.0.0/0
             except:
-              - 172.31.0.0/16
+              - 10.0.0.0/16
       ports:
         - protocol: TCP
           port: 443
@@ -126,7 +126,7 @@ spec:
 
     - to:
         - ipBlock:
-            cidr: 172.31.0.0/16
+            cidr: 10.0.0.0/16
       ports:
         - protocol: TCP
           port: 5432
@@ -135,7 +135,7 @@ spec:
         - ipBlock:
             cidr: 0.0.0.0/0
             except:
-              - 172.31.0.0/16       
+              - 10.0.0.0/16       
       ports:
         - protocol: TCP
           port: 443
@@ -180,7 +180,7 @@ spec:
 
     - to:
         - ipBlock:
-            cidr: 172.31.0.0/16
+            cidr: 10.0.0.0/16
       ports:
         - protocol: TCP
           port: 5432
@@ -225,7 +225,7 @@ spec:
 
     - to:
         - ipBlock:
-            cidr: 172.31.0.0/16
+            cidr: 10.0.0.0/16
       ports:
         - protocol: TCP
           port: 5432
@@ -234,7 +234,7 @@ spec:
         - ipBlock:
             cidr: 0.0.0.0/0
             except:
-              - 172.31.0.0/16 # this should be checked according to VPC CIDR
+              - 10.0.0.0/16 # this should be checked according to VPC CIDR
       ports:
         - protocol: TCP
           port: 443

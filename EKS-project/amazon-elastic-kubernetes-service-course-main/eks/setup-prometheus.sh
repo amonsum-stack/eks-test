@@ -2,11 +2,6 @@
 # setup-prometheus.sh
 #
 # Deploys kube-prometheus-stack via Helm into the monitoring namespace.
-# Prerequisites:
-#   - kubectl configured for the cluster
-#   - helm installed (helm version)
-#
-# Usage:
 #   chmod +x setup-prometheus.sh
 #   ./setup-prometheus.sh
 

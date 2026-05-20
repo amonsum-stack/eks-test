@@ -117,7 +117,7 @@ resource "aws_iam_role_policy_attachment" "node_instance_role_SSMMIC" {
 #}
 
 resource "aws_iam_role_policy_attachment" "node_instance_role_loadbalancer" {
-  policy_arn = var.additional_policy.arn
+  policy_arn = var.additional_policy_arn
   role       = aws_iam_role.node_instance_role.name
 }
 
