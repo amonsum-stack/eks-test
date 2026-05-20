@@ -1,9 +1,7 @@
 ####################################################################
 # Backup ServiceAccount
 #
-# Annotated with the IRSA role ARN — this is what gives the
-# CronJob pods permission to write to S3 without any static
-# AWS credentials anywhere in the cluster.
+# Annotated with the IRSA role ARN — via backup.sh
 ####################################################################
 
 apiVersion: v1
@@ -24,8 +22,7 @@ metadata:
 #   2. gzip compress the output
 #   3. Upload to s3://<bucket>/backups/YYYY-MM-DD/appdb.sql.gz
 #
-# The backup filename includes the date so each week's backup
-# is a separate object — versioning protects against overwrites.
+# The backup filename includes the date so each week's backup is a separate object — versioning protects against overwrites.
 #
 # Replace <backup_bucket_name> with the Terraform output value:
 #   terraform output -raw backup_bucket_name

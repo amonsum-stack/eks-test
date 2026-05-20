@@ -1,7 +1,5 @@
 # Helm values for kube-prometheus-stack.
 # Sized for a 3-node lab cluster (t3.medium nodes).
-# Note: Persistence disabled — EBS CSI addon blocked by lab SCP.
-# Prometheus and Grafana use emptyDir. Data lost on pod restart but metrics re-populate quickly from live scraping.
 #
 # What's enabled:
 #   - Prometheus      (metrics collection, no persistence)

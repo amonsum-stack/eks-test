@@ -109,6 +109,8 @@ helm repo update
 ```
 
 Edit `alb-controller-values.yaml` and replace `<AlbControllerIrsaRoleArn>` with the value from Terraform output, then install:
+Replace the VPC-id with the terraform output
+
 
 ```bash
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \

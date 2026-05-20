@@ -1,13 +1,9 @@
 # Overview:
-#   - weather-app pods: only accept ingress from the VPC CIDR
-#     (ALB hits pods directly via target-type: ip), deny all else.
-#     Egress only to RDS port 5432 and DNS.
+#   - weather-app pods: only accept ingress from the VPC CIDR, egress only to RDS port 5432 and DNS.
 #
-#   - weather-fetcher CronJob pods: no ingress at all.
-#     Egress to RDS (5432), DNS, and internet (Open-Meteo API).
+#   - weather-fetcher CronJob pods: no ingress at all. Egress to RDS (5432), DNS, and internet (Open-Meteo API).
 #
-#   - weather-aggregator CronJob pods: no ingress at all.
-#     Egress to RDS (5432) and DNS only.
+#   - weather-aggregator CronJob pods: no ingress at all. Egress to RDS (5432) and DNS only.
 #
 # Note on ALB + NetworkPolicy:
 #   With alb.ingress.kubernetes.io/target-type: ip, the ALB reaches pods directly using its own IP within the VPC.
@@ -17,8 +13,7 @@
 
 
 
-# Default deny — all ingress and egress in the weather namespace.
-# This is the baseline. Everything below carves out exceptions.
+# Default deny — all ingress and egress in the weather namespace, this is the baseline. Everything below carves out exceptions.
 # Needed because Kubernetes defaults to allow all traffic if no policies exist.
 # THERE IS NO IMPLICIT DENY IN KUBERNETES
 

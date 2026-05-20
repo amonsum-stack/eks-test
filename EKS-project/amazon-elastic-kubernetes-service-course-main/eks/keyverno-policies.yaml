@@ -23,17 +23,6 @@ spec:
               namespaces:
                 - weather
                 # add other namespaces as needed 
-      exclude:
-        any:
-          - resources:
-              kinds:
-                - Pod
-              namespaces:
-                - kube-system
-                - kyverno
-                - monitoring
-                - external-secrets
-                - amazon-cloudwatch
       validate:
         message: "CPU and memory limits are required for all containers."
         pattern:

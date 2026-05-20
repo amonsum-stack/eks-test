@@ -62,22 +62,22 @@ resource "aws_eks_addon" "ebs_csi" {
 }
 
 module "rds" {
-  source = "./modules/rds"
-  private_subnet_id = module.network.private_subnet_id
-  vpc_id = module.network.vpc_id
+  source                 = "./modules/rds"
+  private_subnet_id      = module.network.private_subnet_id
+  vpc_id                 = module.network.vpc_id
   node_security_group_id = module.eks.node_security_group_id
-  db_username = var.db_username
-  db_name = var.db_name
-  db_engine = var.db_engine
-  engine_version = var.engine_version
-  instance_class = var.instance_class
+  db_username            = var.db_username
+  db_name                = var.db_name
+  db_engine              = var.db_engine
+  engine_version         = var.engine_version
+  instance_class         = var.instance_class
 }
 
 module "cloudwatch" {
-  source = "./modules/cloudwatch_alarms"
+  source              = "./modules/cloudwatch_alarms"
   instance_identifier = module.rds.rds_instance_identifier
   alarm_sns_topic_arn = module.sns.sns_rds_alarms_arn
-  ok_sns_topic_arn = module.sns.sns_rds_alarms_arn
+  ok_sns_topic_arn    = module.sns.sns_rds_alarms_arn
 }
 
 module "sns" {
@@ -87,10 +87,10 @@ module "sns" {
 }
 
 module "s3_backup" {
-  source = "./modules/s3_backup"
-  cluster_name = var.cluster_name
-  oidc_provider_url = module.oidc.oidc_provider_url
-  oidc_provider_arn = module.oidc.oidc_provider_arn
+  source               = "./modules/s3_backup"
+  cluster_name         = var.cluster_name
+  oidc_provider_url    = module.oidc.oidc_provider_url
+  oidc_provider_arn    = module.oidc.oidc_provider_arn
   backup_sns_topic_arn = module.sns.sns_backup_events_arn
 }
 

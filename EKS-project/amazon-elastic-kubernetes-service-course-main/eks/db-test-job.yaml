@@ -1,6 +1,5 @@
 # DB Connection Test Job
-# Runs a single psql command against RDS to prove pods can reach
-# the database. 
+# Runs a single psql command against RDS to prove pods can reach the database. 
 # Deploy:
 #   kubectl apply -f db-test-job.yaml
 # Check result:

@@ -166,7 +166,7 @@ spec:
 
       containers:
         - name: cluster-autoscaler
-          # Pin to the minor version matching your cluster (EKS 1.35)
+          # image version must match EKS cluster version (1.35)
           image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.35.0
           command:
             - ./cluster-autoscaler

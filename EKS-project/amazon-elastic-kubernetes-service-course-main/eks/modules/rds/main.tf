@@ -1,13 +1,4 @@
 # RDS Postgres - Private Subnet Deployment
-#
-# Architecture:
-#   - 3 new private subnets (one per AZ, no route to internet)
-#   - DB subnet group spanning all 3 AZs for Multi-AZ readiness
-#   - Security group allowing inbound 5432 only from node SG
-#   - RDS Postgres 16, db.t3.micro, no public accessibility
-#   - Credentials stored in AWS Secrets Manager + k8s Secret
-#
-# Pods reach RDS because nodes and RDS share the same VPC.
 
 # Private Subnets — one per AZ, no route to internet
 

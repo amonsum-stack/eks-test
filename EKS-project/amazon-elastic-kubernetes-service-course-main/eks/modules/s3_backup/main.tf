@@ -7,9 +7,6 @@
 #   4. Lifecycle policy:
 #        Standard → Glacier Instant Retrieval after 30 days
 #        Glacier  → Delete after 365 days
-#   5. Back dont need public access 
-#   6. IAM policy scoped to PutObject/ListBucket on this bucket only
-#   7. IRSA role trusted by the backup-job ServiceAccount
 
 variable "cluster_name" {}
 variable "oidc_provider_url" {}

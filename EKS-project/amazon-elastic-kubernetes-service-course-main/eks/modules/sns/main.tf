@@ -17,6 +17,7 @@ resource "aws_sns_topic" "eks_alarms" {
 */
 
 # Issue with tags, probably lab environment, so ignoring for now
+
 variable "alert_email" {}
 # variable "aws_s3_bucket_arn" {}
 

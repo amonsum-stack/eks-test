@@ -1,8 +1,7 @@
 #!/bin/bash
 # setup-backup.sh
 #
-# Patches backup.yaml with real values from Terraform outputs,
-# then applies the ServiceAccount and CronJob to the cluster.
+# Patches backup.yaml with real values from Terraform outputs, then applies the ServiceAccount and CronJob to the cluster.
 #
 # Usage:
 #   chmod +x setup-backup.sh
